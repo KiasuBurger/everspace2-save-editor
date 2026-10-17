@@ -1,0 +1,134 @@
+# Copyright (C) 2026 KiasuBurger
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      # the version is counted from the tags, and comes out marked as changed if git has
+      # rewritten the line endings
+      - shell: pwsh
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # GTK 4, libadwaita and PyGObject have no Windows build on PyPI; MSYS2 packages them, with
+      # a Python and a PyInstaller to match
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git
+          pacboy: >-
+            python-hatchling:p
+            python-hatch-vcs:p
+            python:p
+            python-numpy:p
+            python-gobject:p
+            gtk4:p
+            libadwaita:p
+            adwaita-icon-theme:p
+            pyinstaller:p
+
+      # PyInstaller takes the code as it is in src, where only building the package would
+      # have written the version
+      - name: Write the version
+        run: |
+          version=$(python -m hatchling version)
+          echo "version $version"
+          printf "__version__ = '%s'\n" "$version" > src/es2save/_version.py
+
+      - name: Build
+        run: |
+          pyinstaller --noconfirm packaging/windows/es2save.spec
+          cp LICENSE dist/es2save/
+
+      # the editor goes without libadwaita, in GTK's own theme, if it cannot find it
+      - name: Check libadwaita is in the build
+        run: |
+          find dist/es2save -name 'libadwaita-1-0.dll' | grep .
+          find dist/es2save -name 'Adw-1.typelib' | grep .
+
+      - name: Check the editor knows its version
+        run: |
+          said=$(dist/es2save/es2save-editor.exe --version | tr -d '\r')
+          echo "$said"
+          test "$said" = "es2save-editor $(python -m hatchling version)"
+
+      # the editor has no console to report to, so it is started and looked at: it has to
+      # still be running after a while, showing its own window and not a report of an error
+      - name: Check the editor starts
+        shell: pwsh
+        env:
+          GSK_RENDERER: cairo
+        run: |
+          $editor = Start-Process dist\es2save\es2save-editor.exe -PassThru
+          Start-Sleep -Seconds 20
+          $editor.Refresh()
+          if ($editor.HasExited) { throw "the editor exited with status $($editor.ExitCode)" }
+          $titles = (Get-Process -Id $editor.Id).MainWindowTitle
+          Write-Host "window: $titles"
+          Stop-Process -Id $editor.Id -Force
+          if ($titles -notmatch 'Everspace 2') { throw "the editor is not showing its window" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: es2save-windows
+          path: dist
+
+  # a tag that names a version gets a release, with the folder zipped as its download
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: es2save-windows
+
+      - name: Zip the folder
+        run: |
+          folder="es2save-${TAG#v}-windows"
+          mv es2save "$folder"
+          zip -q -r "$folder.zip" "$folder"
+
+      # the release may be there already, if the tag was made by publishing one
+      - name: Attach it to the release
+        run: |
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          gh release upload "$TAG" es2save-*-windows.zip --clobber
