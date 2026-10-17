@@ -1,0 +1,219 @@
+/*
+ * Copyright (C) 2026 KiasuBurger
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/* The editor's own layout. Its colours are the variables that game.css or system.css
+   defines, whichever is loaded ahead of this; the rarity colours are the game's
+   (UI/Materials/MPC_Rarity_Colors) either way. */
+
+window.es2 { --rarity: #6b7a82; }
+
+/* ---- navigation ---- */
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+.sidebar .heading {
+  color: var(--faint);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 14px 14px 4px 14px;
+}
+.sidebar button.nav {
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  font-weight: normal;
+  padding: 7px 12px;
+}
+.sidebar button.nav:hover { background: var(--nav-hover); }
+.sidebar button.nav:checked {
+  background: var(--nav-checked);
+  border-left-color: var(--accent);
+  color: var(--strong);
+}
+.sidebar button.nav .count { color: var(--faint); font-size: 0.85em; }
+
+/* ---- inventory ---- */
+
+.section-title {
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.page-title { font-size: 1.35em; font-weight: 700; letter-spacing: 1px; color: var(--strong); }
+.dim { color: var(--dim); }
+.folder { color: var(--bright); }
+.settings .section-title { margin-top: 10px; }
+/* the game's white symbols, which need something dark behind them */
+.glyph { background: var(--glyph); border-radius: 9999px; }
+.slot-label { color: var(--dim); font-size: 0.75em; letter-spacing: 1px; }
+
+.es2 .rarity-None { --rarity: #6b7a82; }
+.es2 .rarity-Common { --rarity: #bcbcbc; }
+.es2 .rarity-Uncommon { --rarity: #50eabc; }
+.es2 .rarity-Rare { --rarity: #00cbff; }
+.es2 .rarity-Superior { --rarity: #ff3b90; }
+.es2 .rarity-Ascendant { --rarity: #c838ff; }
+.es2 .rarity-Legendary { --rarity: #ffa52e; }
+
+/* A tile with an item in it is dark under any theme: the game's icons are drawn for that. */
+button.tile {
+  min-width: 82px;
+  min-height: 82px;
+  padding: 0;
+  border-radius: 0;
+  border: 2px solid var(--rarity);
+  box-shadow: none;
+  background-color: #141d22;
+  background-image: linear-gradient(to bottom, alpha(var(--rarity), 0.04), alpha(var(--rarity), 0.26));
+}
+button.tile:hover {
+  background-image: linear-gradient(to bottom, alpha(var(--rarity), 0.14), alpha(var(--rarity), 0.42));
+}
+button.tile.selected {
+  outline: 2px solid var(--strong);
+  outline-offset: 2px;
+}
+button.tile.empty {
+  border: 1px solid var(--slot-line);
+  background-image: none;
+  background-color: var(--slot);
+}
+button.tile.empty:hover { border-color: var(--accent); }
+.tile .pattern { opacity: 0.55; }
+.tile .level {
+  background: alpha(#05090b, 0.82);
+  color: #ffffff;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.86em;
+  padding: 0 4px;
+  min-width: 14px;
+}
+.tile .mark {
+  background: var(--rarity);
+  color: #05090b;
+  font-weight: 800;
+  font-size: 0.7em;
+  padding: 0 3px;
+}
+.tile .mark.catalyst { background: #ff5fd0; }
+.tile .mark.chaos { background: #ffffff; }
+.tile .placeholder { color: alpha(var(--rarity), 0.9); font-size: 0.72em; font-weight: 700; }
+
+/* ---- item card ---- */
+
+.detail { background: var(--panel); border-left: 1px solid var(--line); }
+.card {
+  background-color: var(--card);
+  background-image: linear-gradient(to bottom, alpha(var(--rarity), 0.22), alpha(var(--rarity), 0.03) 55%);
+  border: 1px solid alpha(var(--rarity), 0.55);
+  border-top: 3px solid var(--rarity);
+}
+.card .level-badge {
+  background: #05090b;
+  color: #ffffff;
+  border: 1px solid var(--rarity);
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 1.1em;
+  min-width: 34px;
+  min-height: 34px;
+}
+.card .name { font-size: 1.5em; font-weight: 800; color: var(--strong); }
+.card .type { color: var(--mild); font-style: italic; }
+.card .tag {
+  background: var(--rarity);
+  color: #05090b;
+  font-weight: 800;
+  font-size: 0.72em;
+  letter-spacing: 2px;
+  padding: 1px 7px;
+}
+.card .tag.grade { background: #e9eef0; }
+.card .effect { color: mix(var(--rarity), var(--text), var(--rarity-ink)); font-size: 1.05em; }
+.card .stat-value {
+  color: mix(var(--rarity), var(--text), var(--rarity-ink));
+  font-family: monospace;
+  font-weight: 700;
+}
+.card .stat-name { color: var(--text); }
+.catalyst { color: mix(var(--rarity), var(--text), var(--rarity-ink)); font-weight: 600; }
+.card .flavour {
+  color: var(--muted);
+  font-style: italic;
+  border-left: 2px solid var(--rule);
+  padding-left: 8px;
+}
+
+.warning {
+  background: alpha(#ffb02e, 0.12);
+  border-left: 3px solid #ffb02e;
+  color: var(--warning);
+  padding: 5px 8px;
+}
+
+.editor-row label.field { color: var(--muted); min-width: 78px; }
+.stat-row { padding: 2px 0; }
+.stat-row .value { font-family: monospace; color: var(--strong); min-width: 76px; }
+.stat-row .range { color: var(--faint); font-size: 0.8em; }
+.stat-row .factor { font-family: monospace; font-size: 0.82em; color: var(--muted); min-width: 46px; }
+.stat-row .factor.good { color: var(--good); }
+.stat-row .factor.bad { color: var(--bad); }
+
+.statusbar {
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 0.86em;
+  padding: 3px 12px;
+}
+.statusbar.error { color: var(--error); }
+.welcome .big { font-size: 1.6em; font-weight: 800; letter-spacing: 3px; color: var(--strong); }
+.welcome .small { font-size: 0.86em; margin-top: 14px; }
+.pilot-grid label.key { color: var(--muted); }
+
+/* ---- lists (the add-item dialog) ---- */
+.es2 list > row { padding: 4px 8px; }
+
+.es2 expander > title { color: var(--muted); font-size: 0.86em; padding: 4px 0; }
+
+.card .catalyst-text { color: var(--soft); font-size: 0.9em; margin-left: 14px; }
+.card .catalyst-effect { color: var(--bright); font-size: 0.9em; margin-left: 14px; }
+
+.card .stat-line { color: var(--bright); }
+.card .dps-title { color: var(--mild); font-size: 0.85em; }
+.card .dps-value { color: var(--strong); font-size: 1.6em; font-weight: 700; }
+.card .rank { color: mix(var(--rarity), var(--text), var(--rarity-ink)); font-weight: 600; }
+
+.resource-head { border-bottom: 1px solid var(--rule); padding-bottom: 4px; margin-top: 10px; }
+.section-note { color: var(--muted); font-style: italic; }
+
+/* ---- perks ---- */
+button.perk { padding: 4px 8px; }
+button.perk:disabled { opacity: 0.45; }
+/* a chip for something with a rarity carries its colour on the leading edge */
+.es2 button.perk.rarity-edge { border-left: 3px solid var(--rarity); }
+.swatch { border-radius: 3px; }
+.perk-text { color: var(--soft); font-size: 0.9em; }
+.perk-name { color: var(--strong); font-weight: 600; }
+.perk-list { margin-bottom: 8px; }

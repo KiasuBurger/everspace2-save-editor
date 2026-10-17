@@ -1,0 +1,60 @@
+[project]
+name = "es2save"
+dynamic = ["version"]
+description = "Reader, writer and item tools for Everspace 2 savegames"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.0.2",
+]
+
+[project.optional-dependencies]
+# most systems provide this as a package (python3-gobject / python3-gi)
+gui = ["pygobject>=3.50"]
+
+[project.gui-scripts]
+es2save-editor = "es2save.editor:main"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+# written when the package is built or installed
+version-file = "src/es2save/_version.py"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=8.4.2",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+# the code formats strings with %, throughout
+ignore = ["UP031", "UP032"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+files = ["src"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+# PyGObject has no type information
+module = ["gi", "gi.*"]
+ignore_missing_imports = true

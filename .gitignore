@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+*.egg-info/
+
+# the version, written from git when the package is built (pyproject.toml)
+/src/es2save/_version.py

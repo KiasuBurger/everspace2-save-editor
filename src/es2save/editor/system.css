@@ -1,0 +1,48 @@
+/*
+ * Copyright (C) 2026 KiasuBurger
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/* The colours style.css draws with, taken from whatever GTK theme is in use. Nothing here
+   touches the theme's own controls. */
+
+window.es2 {
+  /* text, from the brightest to the faintest */
+  --strong: @theme_fg_color;
+  --bright: @theme_fg_color;
+  --text: @theme_fg_color;
+  --soft: alpha(@theme_fg_color, 0.8);
+  --mild: alpha(@theme_fg_color, 0.75);
+  --muted: alpha(@theme_fg_color, 0.65);
+  --dim: alpha(@theme_fg_color, 0.55);
+  --faint: alpha(@theme_fg_color, 0.5);
+  --accent: @theme_selected_bg_color;
+  --panel: alpha(@theme_fg_color, 0.04);
+  --line: @borders;
+  --rule: @borders;
+  --nav-hover: alpha(@theme_fg_color, 0.06);
+  --nav-checked: alpha(@theme_selected_bg_color, 0.18);
+  --slot-line: @borders;
+  --good: @success_color;
+  --bad: @error_color;
+  --error: @error_color;
+  --warning: @theme_fg_color;
+  --card: @theme_base_color;
+  --slot: alpha(@theme_fg_color, 0.05);
+  --glyph: #141d22;
+  /* how far text in a rarity colour leans towards the text colour, to stay readable on a
+     background the game did not choose */
+  --rarity-ink: 0.45;
+}
