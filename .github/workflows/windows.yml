@@ -72,6 +72,11 @@ jobs:
           pyinstaller --noconfirm packaging/windows/es2save.spec
           cp LICENSE dist/es2save/
 
+      # the release zips the folder, and mod sites reject a zip with another one inside it
+      - name: Check there is no archive in the build
+        run: |
+          ! find dist/es2save -iname '*.zip' | grep .
+
       # the editor goes without libadwaita, in GTK's own theme, if it cannot find it
       - name: Check libadwaita is in the build
         run: |

@@ -42,6 +42,9 @@ editor = Analysis(
             'languages': ['en'],
         },
     },
+    # the modules go in the folder as .pyc files rather than into base_library.zip: mod sites
+    # reject a download with a zip inside it
+    noarchive=True,
 )
 
 exe = EXE(PYZ(editor.pure), editor.scripts, exclude_binaries=True, name='es2save-editor', console=False, upx=False)
