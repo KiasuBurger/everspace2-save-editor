@@ -115,6 +115,14 @@ uv run es2save-editor
 `pygobject3` has to be built for the same Python that the editor runs on. If `brew info pygobject3`
 names a later Python than 3.14, install that one instead and use it in the commands above.
 
+## Troubleshooting
+
+If you find the program crashes on Windows, you can find the log file at
+`%LOCALAPPDATA%\es2save\editor.log`. On Linux or MacOS, if you run
+from a terminal, you will see the output directly.
+
+Please attach it when reporting problems.
+
 ## Licence
 
 Copyright © 2026 KiasuBurger. This program is free software: you can redistribute it and
