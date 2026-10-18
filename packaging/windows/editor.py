@@ -41,14 +41,19 @@ def open_log() -> None:
         log = open(path, 'w', buffering=1, encoding='utf-8', errors='replace')  # noqa: SIM115 (open until exit)
     except OSError:
         return
-    sys.stdout = sys.stderr = log
-    try:
-        # GTK writes its warnings to the C library's stderr, not Python's
-        os.dup2(log.fileno(), 2)
-    except OSError:
-        pass
+    # started from a shell, the editor has the shell's streams, which it keeps (--version is
+    # read from them); started from Explorer, it has none
+    if sys.stdout is None:
+        sys.stdout = log
+    if sys.stderr is None:
+        sys.stderr = log
+        try:
+            # GTK writes its warnings to the C library's stderr, not Python's
+            os.dup2(log.fileno(), 2)
+        except OSError:
+            pass
     faulthandler.enable(log)
-    print('es2save-editor %s' % __version__)
+    print('es2save-editor %s' % __version__, file=log)
 
 
 if __name__ == '__main__':
