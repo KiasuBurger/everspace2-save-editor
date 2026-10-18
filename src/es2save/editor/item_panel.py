@@ -52,10 +52,10 @@ class ItemPanel:
         tile = self.window.tiles.get(self.window.selection) if self.window.selection else None
         if tile:
             tile.update()
+        self.build_card()
         if rebuild_controls:
-            self.build_detail()
-        else:
-            self.build_card()
+            # the control that changed is among what is rebuilt, which must not happen inside its handler
+            soon(self.build_controls)
         if self.window.selection and self.window.inventory_page.fit_hold(
             self.window.open_doc.inventory(self.window.selection[0]), self.window.selection[1]
         ):
