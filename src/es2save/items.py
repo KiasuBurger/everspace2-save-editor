@@ -93,6 +93,18 @@ HEXASPATIAL = 'catalyst_ancient_energy_shielding'  # the one a legendary takes t
 SOVEREIGN = 'catalyst_legendary_sovereign'
 SOVEREIGN_ATTRIBUTE = 'sovereign_legendary_catalyst_buff_display'  # shows the levels it gives
 SOVEREIGN_LEVELS = 2.0  # less half a level for each set bonus the ship has active
+# The catalysts that change the item's attributes, which the game multiplies them by again for
+# each copy the save lists. The others are switches, which the game only looks for in the list
+# (or set something once), or add attributes, which an item has once.
+REPEATABLE = frozenset(
+    {
+        'catalyst_damage_uncommon',
+        'catalyst_damage_rare',
+        'catalyst_damage_energy_rare',
+        'catalyst_module_enhancement',
+        'catalyst_repair_protocol',
+    }
+)
 INTUITIVE = 'intuitive'
 ANY_LEVEL = 'CanBeUsedWithAnyLevel'
 ORIGINAL_POSITIONS = 'AttributeOriginalPositionInRange'
@@ -442,15 +454,23 @@ def catalyst_grants(catalyst: str) -> list[tuple[str, float]]:
     return []
 
 
+def repeatable(catalyst: str) -> bool:
+    """Whether a catalyst can be installed more than once: those whose copies each multiply
+    the item's attributes again (see REPEATABLE), though the game never installs one twice
+    itself."""
+    return catalyst in REPEATABLE
+
+
 def add_catalyst(item: Item, catalyst: str, order: Sequence[str] = ()) -> None:
     """Installs a catalyst, with the attributes it adds to the item (at their place in the
     game's `order`) and the rest of what the game writes for it: Chaos needs a seed, so one
     is rolled if there is none; Evolution starts its kill count; Sovereign raises the
-    item's level."""
+    item's level. One that is installed already is only installed again if it is
+    repeatable."""
     entries = get(item, 'Catalysts')
     if entries is None:
         raise KeyError('this save predates catalysts')
-    if catalyst in entries:
+    if catalyst in entries and not repeatable(catalyst):
         return
     entries.append(catalyst)
     for name, pos in catalyst_grants(catalyst):

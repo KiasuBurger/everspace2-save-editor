@@ -241,7 +241,21 @@ class ItemPanel:
 
         if card.equipment and 'Catalysts' in item:
             box.append(label('CATALYSTS', 'section-title'))
+            # one prefix catalyst or none, picked like the prefix; the others are listed and
+            # added to, and those that can go on again stay on offer
+            prefixes = itemrules.prefix_catalysts(game, item)
+            if prefixes:
+                choices = [items.EMPTY] + prefixes
+                names = ['None'] + [game.catalyst_name(c) for c in prefixes]
+                current = itemrules.prefix_catalyst(game, item) or items.EMPTY
+                box.append(
+                    self.window.row(
+                        'Prefix catalyst', self.window.dropdown(choices, names, current, self.set_prefix_catalyst)
+                    )
+                )
             for c in card.catalysts:
+                if itemrules.is_prefix_catalyst(game, c.id):
+                    continue
                 cid = c.id
                 row = Gtk.Box(spacing=8)
                 lab = label(c.name, 'catalyst rarity-' + c.rarity)
@@ -482,6 +496,12 @@ class ItemPanel:
 
     def add_catalyst(self) -> None:
         itemrules.install_catalyst(self.window.game, self.edited_item(), self.new_catalyst)
+        self.changed(rebuild_controls=True)
+
+    def set_prefix_catalyst(self, catalyst: str) -> None:
+        itemrules.set_prefix_catalyst(
+            self.window.game, self.edited_item(), None if catalyst == items.EMPTY else catalyst
+        )
         self.changed(rebuild_controls=True)
 
     def remove_catalyst(self, catalyst: str) -> None:

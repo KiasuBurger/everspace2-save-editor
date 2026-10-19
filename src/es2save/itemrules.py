@@ -27,14 +27,24 @@ from .gamedata import GameData
 from .items import Item
 
 
-def catalyst_affix(game: GameData, item: Item) -> str | None:
-    """The prefix the item's catalysts give it, or None. A prefix catalyst (Catalyst: Rapid)
-    sets the prefix, and the game sets it again from the catalysts when it loads the item:
-    the last of them is the one in force, and whatever prefix the save names is dropped.
-    The others do nothing, so the editor installs one at a time (see install_catalyst)."""
-    given = [game.catalysts.get(c, {}).get('adds_affix') for c in items.catalysts(item)]
-    given = [a for a in given if a]
+def is_prefix_catalyst(game: GameData, catalyst: str) -> bool:
+    """Whether a catalyst gives the item a prefix (Catalyst: Rapid)."""
+    return bool(game.catalysts.get(catalyst, {}).get('adds_affix'))
+
+
+def prefix_catalyst(game: GameData, item: Item) -> str | None:
+    """The prefix catalyst in force on the item, or None. The game sets the prefix again from
+    the catalysts when it loads the item: the last prefix catalyst is the one in force, and
+    whatever prefix the save names is dropped. The others do nothing, so the editor keeps
+    one at a time (see set_prefix_catalyst)."""
+    given = [c for c in items.catalysts(item) if is_prefix_catalyst(game, c)]
     return given[-1] if given else None
+
+
+def catalyst_affix(game: GameData, item: Item) -> str | None:
+    """The prefix the item's catalysts give it, or None."""
+    catalyst = prefix_catalyst(game, item)
+    return game.catalysts[catalyst]['adds_affix'] if catalyst else None
 
 
 def effective_affix(game: GameData, item: Item) -> str:
@@ -48,15 +58,26 @@ def sync_affix(game: GameData, item: Item) -> None:
         items.set_affix(item, given)
 
 
-def install_catalyst(game: GameData, item: Item, catalyst: str) -> None:
-    """Installs a catalyst. An item has one prefix, so a prefix catalyst takes the place of
-    the one that is installed; the other catalysts stack."""
-    if game.catalysts.get(catalyst, {}).get('adds_affix'):
-        for other in items.catalysts(item):
-            if other != catalyst and game.catalysts.get(other, {}).get('adds_affix'):
-                items.remove_catalyst(item, other)
-    items.add_catalyst(item, catalyst, list(game.attributes))
+def set_prefix_catalyst(game: GameData, item: Item, catalyst: str | None) -> None:
+    """Installs a prefix catalyst, or none, in place of any the item has: an item has one
+    prefix. Taking the catalyst out leaves the prefix it gave."""
+    for other in items.catalysts(item):
+        if is_prefix_catalyst(game, other):
+            items.remove_catalyst(item, other)
+    if catalyst:
+        items.add_catalyst(item, catalyst, list(game.attributes))
     sync_affix(game, item)
+
+
+def install_catalyst(game: GameData, item: Item, catalyst: str) -> None:
+    """Installs a catalyst. A prefix catalyst takes the place of the one that is installed
+    (see set_prefix_catalyst). The other catalysts stack, and those that change attributes can
+    go on more than once (see items.repeatable), which the game itself never does: it keeps one
+    catalyst on an item, besides Hexaspatial, and replaces it with the next. The game still
+    applies every catalyst a save lists, each multiplying the item's attributes in turn."""
+    if is_prefix_catalyst(game, catalyst):
+        return set_prefix_catalyst(game, item, catalyst)
+    items.add_catalyst(item, catalyst, list(game.attributes))
 
 
 def catalyst_fits_rarity(game: GameData, catalyst: str, rarity: str) -> bool:
@@ -75,17 +96,32 @@ def catalyst_fits_rarity(game: GameData, catalyst: str, rarity: str) -> bool:
     return True
 
 
+def catalyst_fits(game: GameData, item: Item, catalyst: str) -> bool:
+    """Whether the game installs a catalyst that is for the item's kind on the item."""
+    return (
+        catalyst_fits_rarity(game, catalyst, items.rarity(item))
+        and flawless_fits(item, catalyst)
+        and evolution_fits(game, item, catalyst)
+    )
+
+
 def installable_catalysts(game: GameData, item: Item) -> list[str]:
-    """The catalysts to offer for an item: those for its kind and its rarity that it does not
-    have."""
-    have, rarity = items.catalysts(item), items.rarity(item)
+    """The catalysts other than prefix ones to offer for an item: those for its kind and its
+    rarity, less those it has that cannot go on twice."""
+    have = items.catalysts(item)
     return [
         c
         for c in game.catalysts_for(items.template(item))
-        if c not in have
-        and catalyst_fits_rarity(game, c, rarity)
-        and flawless_fits(item, c)
-        and evolution_fits(game, item, c)
+        if not is_prefix_catalyst(game, c) and (c not in have or items.repeatable(c)) and catalyst_fits(game, item, c)
+    ]
+
+
+def prefix_catalysts(game: GameData, item: Item) -> list[str]:
+    """The prefix catalysts to offer for an item, the installed one among them."""
+    return [
+        c
+        for c in game.catalysts_for(items.template(item))
+        if is_prefix_catalyst(game, c) and catalyst_fits(game, item, c)
     ]
 
 
