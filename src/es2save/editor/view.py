@@ -259,6 +259,15 @@ def build_card(game: GameData, item: Item) -> Card:
             card.warnings.append('The game only installs Flawless on Radiant items with legendary attributes.')
         elif not evolution_fits(game, item, c):
             card.warnings.append('The game does not install Evolution on a weapon that does no damage.')
+    # The game keeps one catalyst on an item besides Hexaspatial, and its own installing
+    # goes wrong on more: it undoes all of them but takes out one, and re-applying what is
+    # left has crashed it on an equipped item.
+    if len([c for c in catalyst_ids if c != items.HEXASPATIAL]) > 1:
+        card.warnings.append(
+            'The game expects at most one catalyst per item, besides Hexaspatial. Attempting to '
+            'install another catalyst on this item within the game could cause a crash. Use the '
+            'editor instead.'
+        )
     allowed = game.rarities(tpl)
     if card.equipment and card.rarity not in allowed:
         card.warnings.append('The game only makes this item as %s.' % _span(allowed))
