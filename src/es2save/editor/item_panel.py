@@ -358,11 +358,14 @@ class ItemPanel:
                     lambda new, old=s.name: self.swap_stat(old, new),
                 )
             )
-            remove = Gtk.Button(label='×')
-            remove.add_css_class('danger')
-            remove.set_tooltip_text('Remove this stat')
-            remove.connect('clicked', lambda _b, n=s.name: self.remove_stat(n))
-            top.append(remove)
+            # a reliquary has its blessing, and its radiant one while it is Radiant, which the
+            # Radiant switch takes away
+            if not itemrules.radiant_blessings(game, items.template(item)):
+                remove = Gtk.Button(label='×')
+                remove.add_css_class('danger')
+                remove.set_tooltip_text('Remove this stat')
+                remove.connect('clicked', lambda _b, n=s.name: self.remove_stat(n))
+                top.append(remove)
         else:
             name = label(s.label)
             name.set_hexpand(True)
@@ -491,8 +494,6 @@ class ItemPanel:
             self.changed(rebuild_controls=True)
 
     def remove_stat(self, name: str) -> None:
-        if items.is_radiant_blessing(name):
-            return self.set_radiant(False)  # the grade goes with it
         items.remove_attribute(self.edited_item(), name)
         self.changed(rebuild_controls=True)
 
