@@ -57,13 +57,15 @@ class InventoryPage:
         model = ships.model_name(self.window.game, inventory.ship) if inventory.ship and self.window.game else None
         if model:
             top.append(label(model, 'page-model'))
-        self.cargo_tools(inventory, top)
+        equipment = {array: (name, lst) for array, name, lst in inventory.equipment()}
+        if not equipment:
+            # nothing comes between the title and the cargo, so its tools can sit on the title's line
+            self.cargo_tools(inventory, top)
         self.window.page.append(top)
 
         if inventory.kind == 'ship' and self.window.game:
             self.build_ship(inventory)
             self.build_passives(inventory)
-        equipment = {array: (name, lst) for array, name, lst in inventory.equipment()}
         if equipment:
             self.window.page.append(label('EQUIPPED', 'section-title'))
             # three rows, grouped as in the game: weapons, modules, then devices and consumables
@@ -86,7 +88,13 @@ class InventoryPage:
                     line.append(group)
                 if line.get_first_child():
                     self.window.page.append(line)
-            self.window.page.append(label('CARGO', 'section-title'))
+            head = Gtk.Box(spacing=10)
+            head.add_css_class('cargo-head')
+            title = label('CARGO', 'section-title')
+            title.set_valign(Gtk.Align.CENTER)
+            head.append(title)
+            self.cargo_tools(inventory, head)
+            self.window.page.append(head)
 
         if inventory.kind == 'resources':
             # the game's own page: sections with a note on where their things come from
