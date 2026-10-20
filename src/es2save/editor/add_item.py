@@ -100,11 +100,15 @@ class AddItemDialog(Gtk.Window):
         chosen: str = row.template
         game = self.window.game
         rarities = game.rarities(chosen)
-        self.rarity = rarities[-1] if game.is_equipment(chosen) and rarities[-1] != 'Ascendant' else rarities[0]
-        if game.is_equipment(chosen) and 'Superior' in rarities:
-            self.rarity = 'Superior'
+        equipment = game.is_equipment(chosen)
         if rarities[0] == 'Legendary':
             self.rarity = 'Legendary'
+        elif equipment and 'Superior' in rarities:
+            self.rarity = 'Superior'
+        elif equipment and rarities[-1] != 'Ascendant':
+            self.rarity = rarities[-1]
+        else:
+            self.rarity = rarities[0]
         self.level = self.window.open_doc.scalar('PlayerLevel') or 1
         self.amount = 1
         self.options.append(label('Rarity', 'dim'))

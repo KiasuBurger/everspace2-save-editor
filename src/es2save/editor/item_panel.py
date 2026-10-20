@@ -287,8 +287,7 @@ class ItemPanel:
         if card.chaos:
             box.append(label('CHAOS SEED', 'section-title'))
             seed_row = Gtk.Box(spacing=8)
-            self.seed_spin = self.window.spin(card.seed or 1, -INT_MAX - 1, INT_MAX, self.set_seed)
-            seed_row.append(self.seed_spin)
+            seed_row.append(self.window.spin(card.seed or 1, -INT_MAX - 1, INT_MAX, self.set_seed))
             search = Gtk.Button(label='Find best')
             search.add_css_class('accent')
             search.add_css_class('suggested-action')
@@ -308,9 +307,7 @@ class ItemPanel:
         box.append(label('ACTIONS', 'section-title'))
         source = self.window.selected_inventory
         others = [
-            inv
-            for inv in self.window.open_doc.inventories
-            if inv.key != self.window.selected_slot[0] and inv.kind in ('ship', 'station')
+            inv for inv in self.window.open_doc.inventories if inv.key != self.window.selected_slot[0] and inv.limited
         ]
         if others:
             self.move_target = others[0]
@@ -325,7 +322,7 @@ class ItemPanel:
             line.append(move)
             box.append(self.window.row('Move to', line))
         actions = Gtk.Box(spacing=8)
-        if source.kind in ('ship', 'station'):  # resources and quest items are one stack per kind
+        if source.limited:  # resources and quest items are one stack per kind
             dup = Gtk.Button(label='Duplicate')
             dup.set_tooltip_text('Put a copy into a free cargo slot of %s' % source.label)
             dup.connect('clicked', lambda _b: self.duplicate_item())
@@ -380,37 +377,31 @@ class ItemPanel:
             outer.append(top)
             return outer
         outer.append(top)
+        line = top
         if not s.sliding:
             # nothing to slide: the game gives every item of this kind the same value, and a
             # bonus stat of one value has it whatever its position
-            value = label('', 'value', xalign=1.0)
-            factor = label('', 'factor', xalign=1.0)
             if s.kind == 'fixed':
                 top.append(label('fixed', 'range'))
-            top.append(value)
-            if self.shown_card.chaos:  # the column is only there for the factors Chaos gives
-                top.append(factor)
-            self.stat_rows[s.name] = (value, factor)
-            self.fill_stat_row(s)
-            return outer
-        bottom = Gtk.Box(spacing=8)
-        scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.0, 1.0, 0.01)
-        scale.set_draw_value(False)
-        scale.set_hexpand(True)
-        scale.set_value(max(0.0, min(1.0, s.position)))
-        if s.locked:
-            scale.set_sensitive(False)
-            scale.set_tooltip_text("Held at its maximum by the item's prefix or a catalyst")
+        else:
+            line = Gtk.Box(spacing=8)
+            outer.append(line)
+            scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.0, 1.0, 0.01)
+            scale.set_draw_value(False)
+            scale.set_hexpand(True)
+            scale.set_value(max(0.0, min(1.0, s.position)))
+            if s.locked:
+                scale.set_sensitive(False)
+                scale.set_tooltip_text("Held at its maximum by the item's prefix or a catalyst")
+            scale.connect('value-changed', lambda sc, n=s.name: self.set_position(n, sc.get_value()))
+            line.append(scale)
         value = label('', 'value', xalign=1.0)
         factor = label('', 'factor', xalign=1.0)
-        bottom.append(scale)
-        bottom.append(value)
-        if self.shown_card.chaos:
-            bottom.append(factor)
-        outer.append(bottom)
+        line.append(value)
+        if self.shown_card.chaos:  # the column is only there for the factors Chaos gives
+            line.append(factor)
         self.stat_rows[s.name] = (value, factor)
         self.fill_stat_row(s)
-        scale.connect('value-changed', lambda sc, n=s.name: self.set_position(n, sc.get_value()))
         return outer
 
     def fill_stat_row(self, s: view.Stat) -> None:

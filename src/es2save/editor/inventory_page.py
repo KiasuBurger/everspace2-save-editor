@@ -125,10 +125,10 @@ class InventoryPage:
         """How full the cargo is, the filter of its grid, and the button that adds to it, at
         the right of a line."""
         box.append(Gtk.Box(hexpand=True))
-        self.count_label = label(view.cargo_summary(inventory), 'dim')
-        self.count_label.set_valign(Gtk.Align.CENTER)
-        box.append(self.count_label)
-        if inventory.kind in ('station', 'ship'):
+        count = label(view.cargo_summary(inventory), 'dim')
+        count.set_valign(Gtk.Align.CENTER)
+        box.append(count)
+        if inventory.limited:
             search = Gtk.SearchEntry(placeholder_text='Filter by name, type or rarity')
             search.set_text(self.filter_text)
             search.set_size_request(240, -1)
@@ -232,9 +232,9 @@ class InventoryPage:
         grid = Gtk.Grid(column_spacing=10, row_spacing=4)
         grid.add_css_class('perk-list')
         self.window.page.append(grid)
-        for name in have if fixed else []:
-            self.perk_line(grid, label(game.attribute_name(name), 'perk-name'), self.passive_text(ship, name))
         if fixed:
+            for name in have:
+                self.perk_line(grid, label(game.attribute_name(name), 'perk-name'), self.passive_text(ship, name))
             return
         for name in have:
             choices = itemrules.swap_choices(game, ship, name)

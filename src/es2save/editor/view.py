@@ -378,24 +378,25 @@ def cargo_summary(inventory: Inventory) -> str:
     return '%d of %d cargo slots used' % (used, len(inventory.cargo))
 
 
+def filter_group(game: GameData, tpl: str) -> str:
+    """Which of the cargo filter's groups (FILTERS in inventory_page.py) an item is in."""
+    cat = game.category(tpl)
+    if cat in ('cat_weapon', 'cat_launcher'):
+        return 'weapons'
+    if game.is_equipment(tpl):
+        return 'modules'
+    if tpl.startswith('catalyst_'):
+        return 'catalysts'
+    if cat in ('cat_consumable', 'cat_device'):
+        return 'consumables'
+    return 'other'
+
+
 def matches(game: GameData, item: Item, text: str, category: str) -> bool:
     """Whether an item passes the search box and the category filter."""
     tpl = items.template(item)
-    if category and category != 'all':
-        cat = game.category(tpl)
-        group = (
-            'weapons'
-            if cat in ('cat_weapon', 'cat_launcher')
-            else 'modules'
-            if cat in ('cat_energy_core', 'cat_shield', 'cat_plating', 'cat_sensor', 'cat_thrusters', 'cat_cargo_unit')
-            else 'catalysts'
-            if tpl.startswith('catalyst_')
-            else 'consumables'
-            if cat in ('cat_consumable', 'cat_device')
-            else 'other'
-        )
-        if group != category:
-            return False
+    if category and category != 'all' and filter_group(game, tpl) != category:
+        return False
     if text:
         hay = ' '.join(
             (

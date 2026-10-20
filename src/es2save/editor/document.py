@@ -62,9 +62,6 @@ class Document:
     def properties(self) -> Properties:
         return self.save['properties']
 
-    def refresh(self) -> None:
-        self.inventories = items.inventories(self.save)
-
     def inventory(self, key: str) -> items.Inventory | None:
         return next((inv for inv in self.inventories if inv.key == key), None)
 
