@@ -135,7 +135,7 @@ def companion_perks(props: Properties) -> list[CompanionPerk]:
 
 def companion(game: GameData, perk_id: str) -> str:
     """'Engineer': whose perk it is, from its sub-category (cat_perk_engineer)."""
-    sub = game.item(perk_id).get('sub_category', '')
+    sub = game.sub_category(perk_id)
     name = sub[len('cat_perk_') :] if sub.startswith('cat_perk_') else ''
     return {'homebase': 'Home base', 'elek': 'Elek', 'hive': 'HIVE'}.get(name, name.capitalize() or 'Other')
 

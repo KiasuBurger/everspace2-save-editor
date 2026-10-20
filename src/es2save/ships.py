@@ -72,14 +72,14 @@ def level_name(ship_level: int) -> str:
 
 def ship_class(game: GameData, ship: Properties) -> str | None:
     """Light, Medium or Heavy; None for a ship without parts to choose (the Okkar one)."""
-    sub = game.item(items.template(ship_item(ship))).get('sub_category', '')
+    sub = game.sub_category(items.template(ship_item(ship)))
     name = sub.removeprefix('cat_ship_').capitalize()
     return name if name in unlocks.SHIP_CLASSES and name in game.ship_modules else None
 
 
 def fixed(game: GameData, ship: Properties) -> bool:
     """Whether the ship comes only as it is: the Wraith, of the Okkar class."""
-    sub = game.item(items.template(ship_item(ship))).get('sub_category', '')
+    sub = game.sub_category(items.template(ship_item(ship)))
     return sub.startswith(OKKAR)
 
 

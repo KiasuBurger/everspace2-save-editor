@@ -213,7 +213,7 @@ class InventoryPage:
         class's pool. The Wraith's are its own and stay. The passive every ship of the class
         has is left out, like the class's other abilities."""
         game = self.window.game
-        ship = items.get(inventory.ship or {}, 'ShipItemState')
+        ship = inventory.ship_item
         if not ship or not perks.passive_pool(game, ship):
             return
         fixed = ships.fixed(game, inventory.ship or {})
@@ -303,7 +303,7 @@ class InventoryPage:
             self.change_passive(inventory, items.replace_attribute, old, new, list(self.window.game.attributes))
 
     def change_passive(self, inventory: Inventory, change: Callable[..., object], *args: Any) -> None:
-        change(items.get(inventory.ship or {}, 'ShipItemState'), *args)
+        change(inventory.ship_item, *args)
         self.window.mark_dirty()
         # the page is rebuilt, which must not happen inside the handler of one of its widgets
         soon(lambda: self.show(self.window.open_doc.inventory(inventory.key)))

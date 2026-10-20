@@ -356,7 +356,7 @@ def resource_sections(game: GameData, inventory: Inventory) -> list[tuple[str, s
         if items.is_empty(item):
             continue
         tpl = items.template(item)
-        section = by_sub.get(game.item(tpl).get('sub_category', ''), len(RESOURCE_SECTIONS))
+        section = by_sub.get(game.sub_category(tpl), len(RESOURCE_SECTIONS))
         rarity = items.rarity(item)
         rank = items.RARITIES.index(rarity) if rarity in items.RARITIES else 0
         found[section].append((-rank, order.get(tpl, len(order)), index))

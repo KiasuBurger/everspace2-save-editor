@@ -82,10 +82,10 @@ FLAWLESS_ATTRIBUTES = frozenset(
 MINING = 'catalyst_mining'
 MINING_ATTRIBUTES = ('weapon_mining_quality', 'weapon_mining_refund', 'weapon_mining_quantity')
 EVOLUTION = 'catalyst_evolution'
-EVOLUTION_ATTRIBUTES = ('evolution_catalyst_buff', 'evolution_catalyst_kill_count')
 EVOLUTION_KILLS = 'evolution_catalyst_buff'  # the CustomData key of the kill count
 EVOLUTION_BONUS = 'evolution_catalyst_buff'  # the attribute whose position is the damage bonus
 EVOLUTION_KILL_COUNT = 'evolution_catalyst_kill_count'
+EVOLUTION_ATTRIBUTES = (EVOLUTION_BONUS, EVOLUTION_KILL_COUNT)
 EVOLUTION_STEPS = ((300, 0.2), (100, 0.1))  # kills, and the damage bonus from then on
 EVOLUTION_EARNS = 1000  # kills at which the item gets one more bonus attribute
 OKKAR = 'catalyst_okkar_'
@@ -654,14 +654,25 @@ def create(
     if bonus is None:
         bonus = game.bonus_attributes(template_id)[: BONUS_STATS.get(rarity_name, 0)]
     names = game.fixed_attributes(template_id) + [b for b in bonus]
-    order = list(game.ranges(template_id))
-    names.sort(key=lambda n: order.index(n) if n in order else len(order))
     put(item, 'AttributeStates', [_state(n, position_value) for n in names])
+    sort_attributes(item, list(game.ranges(template_id)))
     set_rarity(item, rarity_name)
     return item
 
 
 # ---------------------------------------------------------------- inventories
+
+
+def _fit(lst: list[Item], capacity: int) -> None:
+    """Grows a list of slots to a capacity with empty ones at the end, or shrinks it by taking
+    away empty slots, last ones first. A slot with something in it is never removed."""
+    while len(lst) < capacity:
+        lst.append(blank(copy.deepcopy(lst[0])))
+    for index in range(len(lst) - 1, -1, -1):
+        if len(lst) <= capacity:
+            break
+        if is_empty(lst[index]):
+            del lst[index]
 
 
 def slot_count(game: GameData, item: Item, attribute: str) -> int | None:
@@ -736,15 +747,22 @@ class Inventory:
         lst.append(item)
         return len(lst) - 1
 
+    @property
+    def ship_item(self) -> Item | None:
+        """The ship's own item, which holds its level and passives; None for anything but a ship."""
+        if self.kind != 'ship' or not self.ship or 'ShipItemState' not in self.ship:
+            return None
+        return self.ship['ShipItemState']['value']
+
     def cargo_capacity(self, game: GameData) -> int | None:
         """How many cargo slots the game gives this ship: the ship's own Cargo Slots plus the
         Cargo Slots bonus of everything equipped (only cargo units have one), each scaled for
         its level and rounded as the game stores whole-number attributes
         (UInventoryLib::GetTotalCargoSpaceOfShip). None for anything but a ship, or when the
         game data cannot tell."""
-        if self.kind != 'ship' or not self.ship or 'ShipItemState' not in self.ship:
+        if self.ship_item is None:
             return None
-        parts = [slot_count(game, self.ship['ShipItemState']['value'], 'cargo_slots')]
+        parts = [slot_count(game, self.ship_item, 'cargo_slots')]
         parts += [
             slot_count(game, it, 'cargo_slots_buff')
             for name in SLOT_NAMES
@@ -759,9 +777,9 @@ class Inventory:
         """How many device slots the game gives this ship: its Device Slots, which grow with
         its level, and never more than four. None for anything but a ship, or when the game
         data cannot tell."""
-        if self.kind != 'ship' or not self.ship or 'ShipItemState' not in self.ship:
+        if self.ship_item is None:
             return None
-        count = slot_count(game, self.ship['ShipItemState']['value'], 'device_slots')
+        count = slot_count(game, self.ship_item, 'device_slots')
         return min(count, MAX_DEVICE_SLOTS) if count else None
 
     def fit_devices(self, game: GameData) -> list[Item]:
@@ -773,11 +791,7 @@ class Inventory:
         lst = self.slots.get(DEVICES)
         if capacity is None or not lst:
             return []
-        while len(lst) < capacity:
-            lst.append(blank(copy.deepcopy(lst[0])))
-        for index in range(len(lst) - 1, -1, -1):
-            if len(lst) > capacity and is_empty(lst[index]):
-                del lst[index]
+        _fit(lst, capacity)
         moved = []
         while len(lst) > capacity and self.free_cargo():
             item = lst.pop()
@@ -794,13 +808,7 @@ class Inventory:
         if capacity is None or not lst or len(lst) == capacity:
             return False
         before = len(lst)
-        while len(lst) < capacity:
-            lst.append(blank(copy.deepcopy(lst[0])))
-        for index in range(len(lst) - 1, -1, -1):
-            if len(lst) <= capacity:
-                break
-            if is_empty(lst[index]):
-                del lst[index]
+        _fit(lst, capacity)
         return len(lst) != before
 
     def remove(self, array: str, index: int) -> Item:

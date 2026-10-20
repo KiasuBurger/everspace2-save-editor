@@ -157,6 +157,9 @@ class GameData:
     def category(self, template: str) -> str:
         return self.item(template).get('main_category', '')
 
+    def sub_category(self, template: str) -> str:
+        return self.item(template).get('sub_category', '')
+
     def category_name(self, template: str) -> str:
         """'Shield', or the sub-category where there is one ('Rail Gun')."""
         info = self.item(template)
