@@ -113,6 +113,14 @@ def label(
     return lab
 
 
+def margins(widget: Gtk.Widget, size: int) -> None:
+    """The same margin on every side."""
+    widget.set_margin_top(size)
+    widget.set_margin_bottom(size)
+    widget.set_margin_start(size)
+    widget.set_margin_end(size)
+
+
 def soon(call: Callable[[], object]) -> None:
     """Calls something once the handler that is running has returned."""
 

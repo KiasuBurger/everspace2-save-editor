@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from .. import perks
 from .gtk import Gtk
-from .widgets import clear, label, picture
+from .widgets import label, picture
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -30,14 +30,8 @@ class PerksPage:
         self.window = window
 
     def show(self) -> None:
-        self.window.inventory = None
-        self.window.tiles = {}
-        self.window.selection = None
-        clear(self.window.page)
-        self.window.item_panel.build_detail()
-        self.window.sync_nav('perks')
+        self.window.start_page('perks', 'PERKS')
         game, props = self.window.game, self.window.open_doc.properties
-        self.window.page.append(label('PERKS', 'page-title'))
         with self.window.filling():
             if perks.PLAYER_PERKS in props and game:
                 self.window.page.append(label('PLAYER PERKS', 'section-title'))

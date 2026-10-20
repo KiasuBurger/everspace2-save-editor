@@ -23,7 +23,7 @@ from .. import chaos, itemrules, items
 from ..items import Item
 from . import view
 from .gtk import GLib, Gtk, Pango
-from .widgets import INT_MAX, clear, close_on_escape, label, picture, soon
+from .widgets import INT_MAX, clear, close_on_escape, label, margins, picture, soon
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -81,8 +81,7 @@ class ItemPanel:
         box.add_css_class('card')
         box.add_css_class('rarity-' + card.rarity)
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(inner, 'set_margin_' + side)(12)
+        margins(inner, 12)
         box.append(inner)
 
         head = Gtk.Box(spacing=10)
@@ -533,8 +532,7 @@ class ItemPanel:
         cancel = self.search_cancel = threading.Event()
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(box, 'set_margin_' + side)(20)
+        margins(box, 20)
         box.append(label('Trying every Chaos seed', 'section-title'))
         box.append(label('For %s' % self.shown_card.name, 'dim', wrap=True))
         bar = Gtk.ProgressBar(show_text=True)

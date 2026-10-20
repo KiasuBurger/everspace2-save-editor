@@ -25,7 +25,7 @@ from . import DESKTOP_FILES, config, editor_command, install_desktop
 from .document import default_backup_dir
 from .game_files import installed_game
 from .gtk import Gio, GLib, Gtk, Pango
-from .widgets import clear, close_on_escape, label, soon
+from .widgets import clear, close_on_escape, label, margins, soon
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -47,8 +47,7 @@ class SettingsDialog(Gtk.Window):
         self.pages = {}
         for name, title in PAGES:
             page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            for side in ('top', 'bottom', 'start', 'end'):
-                getattr(page, 'set_margin_' + side)(18)
+            margins(page, 18)
             self.pages[name] = page
             self.stack.add_titled(page, name, title)
         switcher = Gtk.StackSwitcher(stack=self.stack, halign=Gtk.Align.CENTER)

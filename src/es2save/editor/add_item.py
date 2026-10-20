@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from .. import itemrules, items
 from ..items import Inventory
 from .gtk import Gtk
-from .widgets import clear, close_on_escape, label, picture
+from .widgets import clear, close_on_escape, label, margins, picture
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -43,8 +43,7 @@ class AddItemDialog(Gtk.Window):
         self.chosen: str | None = None
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(box, 'set_margin_' + side)(14)
+        margins(box, 14)
         where = inventory.label if array == items.CARGO else '%s, %s' % (inventory.label, items.SLOT_NAMES[array])
         box.append(label('ADD TO %s' % where.upper(), 'section-title'))
         self.search = Gtk.SearchEntry(placeholder_text='Search by name, type or ID')

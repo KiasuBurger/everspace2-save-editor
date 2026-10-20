@@ -18,7 +18,7 @@
 from typing import TYPE_CHECKING
 
 from .gtk import Gtk
-from .widgets import INT_MAX, clear, label
+from .widgets import INT_MAX, label
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -47,13 +47,7 @@ class PilotPage:
         self.window = window
 
     def show(self) -> None:
-        self.window.inventory = None
-        self.window.tiles = {}
-        self.window.selection = None
-        clear(self.window.page)
-        self.window.item_panel.build_detail()
-        self.window.sync_nav('pilot')
-        self.window.page.append(label('PILOT', 'page-title'))
+        self.window.start_page('pilot', 'PILOT')
         grid = Gtk.Grid(column_spacing=16, row_spacing=8)
         grid.add_css_class('pilot-grid')
         row = 0

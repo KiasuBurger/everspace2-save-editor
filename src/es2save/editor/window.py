@@ -39,7 +39,7 @@ from .item_panel import ItemPanel
 from .perks_page import PerksPage
 from .pilot_page import PilotPage
 from .unlock_pages import UnlockPages
-from .widgets import IconStore, Key, Tile, clear, close_on_escape, label
+from .widgets import IconStore, Key, Tile, clear, close_on_escape, label, margins
 
 SHORTCUTS = [  # (window action, key, method)
     ('open', '<Control>o', 'choose_file'),
@@ -123,15 +123,13 @@ class EditorWindow(Gtk.ApplicationWindow):
         body.append(side_scroll)
 
         self.page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, hexpand=True)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(self.page, 'set_margin_' + side)(16)
+        margins(self.page, 16)
         page_scroll = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER, hexpand=True)
         page_scroll.set_child(self.page)
         body.append(page_scroll)
 
         self.detail = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(self.detail, 'set_margin_' + side)(14)
+        margins(self.detail, 14)
         self.card_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.edit_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.detail.append(self.card_box)
@@ -329,11 +327,16 @@ class EditorWindow(Gtk.ApplicationWindow):
         dialog.save(self, None, done)
 
     def confirm_replace(self, path: str, proceed: Callable[[], object]) -> None:
-        dialog = Gtk.AlertDialog(
-            message='Replace %s?' % os.path.basename(path),
-            detail='A file of that name is already in %s. Saving replaces it.' % os.path.dirname(path),
-            buttons=['Cancel', 'Replace'],
+        self.confirm(
+            'Replace %s?' % os.path.basename(path),
+            'A file of that name is already in %s. Saving replaces it.' % os.path.dirname(path),
+            'Replace',
+            proceed,
         )
+
+    def confirm(self, message: str, detail: str, verb: str, proceed: Callable[[], object]) -> None:
+        """Asks before doing something that cannot be undone; Cancel is the default."""
+        dialog = Gtk.AlertDialog(message=message, detail=detail, buttons=['Cancel', verb])
         dialog.set_cancel_button(0)
         dialog.set_default_button(0)
 
@@ -377,22 +380,12 @@ class EditorWindow(Gtk.ApplicationWindow):
         if not self.doc or not self.doc.dirty:
             proceed()
             return
-        dialog = Gtk.AlertDialog(
-            message='Discard unsaved changes?',
-            detail='%s has changes that have not been saved.' % self.doc.name,
-            buttons=['Cancel', 'Discard'],
+        self.confirm(
+            'Discard unsaved changes?',
+            '%s has changes that have not been saved.' % self.doc.name,
+            'Discard',
+            proceed,
         )
-        dialog.set_cancel_button(0)
-        dialog.set_default_button(0)
-
-        def done(dlg: Gtk.AlertDialog, result: Gio.AsyncResult) -> None:
-            try:
-                if dlg.choose_finish(result) == 1:
-                    proceed()
-            except GLib.Error:
-                pass
-
-        dialog.choose(self, None, done)
 
     def on_close_request(self, _window: Gtk.Window) -> bool:
         if self.item_panel.search_cancel:
@@ -573,7 +566,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         box.append(widget)
         return box
 
-    def start_page(self, key: str, title: str, note: str) -> None:
+    def start_page(self, key: str, title: str, note: str = '') -> None:
         self.inventory = None
         self.tiles = {}
         self.selection = None
@@ -581,4 +574,5 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.item_panel.build_detail()
         self.sync_nav(key)
         self.page.append(label(title, 'page-title'))
-        self.page.append(label(note, 'dim', wrap=True))
+        if note:
+            self.page.append(label(note, 'dim', wrap=True))

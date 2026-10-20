@@ -24,7 +24,7 @@ from .. import gamedata, gamepaths
 from ..gamedata import GameData
 from . import config, icons
 from .gtk import Gio, GLib, Gtk
-from .widgets import label
+from .widgets import label, margins
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -113,8 +113,7 @@ class GameFiles:
         the item definitions if data is given, and the icons if the editor has none yet or
         icons_too is set."""
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        for side in ('top', 'bottom', 'start', 'end'):
-            getattr(box, 'set_margin_' + side)(20)
+        margins(box, 20)
         box.append(label("Reading the game's files", 'section-title'))
         box.append(label('From %s' % game, 'dim', wrap=True))
         bar = Gtk.ProgressBar(show_text=True, text='Item definitions')
