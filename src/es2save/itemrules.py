@@ -149,10 +149,21 @@ def evolution_fits(game: GameData, item: Item, catalyst: str = items.EVOLUTION) 
 
 def is_stackable(game: GameData, item: Item) -> bool:
     """Stackable things carry an amount; equipment is always a single piece."""
-    tpl = items.template(item)
     if game:
-        return not game.is_equipment(tpl) and game.category(tpl) != 'cat_device'
+        return stacks(game, items.template(item))
     return items.get(item, 'Amount', 1) > 1
+
+
+def stacks(game: GameData, template: str) -> bool:
+    """Whether items of a template carry an amount rather than a level: everything but
+    equipment and devices."""
+    return not game.is_equipment(template) and not is_device(game, template)
+
+
+def is_device(game: GameData, template: str) -> bool:
+    """Devices have a level, which the game holds at the player's
+    (UPlayerData::SetAllDeviceItemLevelsToPlayerLevel), and nothing else to choose."""
+    return game.category(template) == 'cat_device'
 
 
 def set_evolution_kills(game: GameData, item: Item, kills: float) -> None:

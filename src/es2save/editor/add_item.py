@@ -116,7 +116,9 @@ class AddItemDialog(Gtk.Window):
         dd.set_selected(rarities.index(self.rarity))
         dd.connect('notify::selected', lambda d, _p: setattr(self, 'rarity', rarities[d.get_selected()]))
         self.options.append(dd)
-        if game.is_equipment(chosen):
+        if itemrules.is_device(game, chosen):
+            pass  # at the player's level, as the game keeps every device
+        elif equipment:
             self.options.append(label('Level', 'dim'))
             sb = Gtk.SpinButton.new_with_range(1, 99, 1)
             sb.set_value(self.level)
@@ -140,7 +142,7 @@ class AddItemDialog(Gtk.Window):
             chosen,
             game,
             self.rarity,
-            level=self.level if equipment else 1,
+            level=1 if itemrules.stacks(game, chosen) else self.level,
             amount=self.amount,
             position_value=1.0 if equipment else 0.5,
         )

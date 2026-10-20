@@ -166,7 +166,10 @@ class ItemPanel:
                     'Amount', self.window.spin(card.amount, 1, 99999999, lambda v: self.set_field('Amount', v))
                 )
             )
-        if 'ItemLevel' in item and not card.stackable:
+        if itemrules.is_device(game, tpl):
+            # the game holds every device at the player's level, whatever the save says
+            box.append(self.window.row('Level', label(str(card.level), 'value')))
+        elif 'ItemLevel' in item and not card.stackable:
             box.append(
                 self.window.row('Level', self.window.spin(card.level, 1, 99, lambda v: self.set_field('ItemLevel', v)))
             )
