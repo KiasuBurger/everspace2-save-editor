@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""The pages of what is unlocked: blueprints, and ship colours, decals and modules."""
+"""The pages of what is unlocked: blueprints, ship colours and decals, and ship modules."""
 
 from collections.abc import Callable, Iterable, Sequence
 from typing import TYPE_CHECKING, Any
@@ -152,12 +152,8 @@ class UnlockPages:
             if singles:
                 self.flow(singles)
 
-    def show_appearance(self) -> None:
-        self.window.start_page(
-            'appearance',
-            'SHIP APPEARANCE',
-            'What the customisation menu offers. A ship keeps what it is wearing either way.',
-        )
+    def show_colours(self) -> None:
+        self.window.start_page('colours', 'SHIP COLOURS AND DECALS')
         game, props = self.window.game, self.window.open_doc.properties
         if unlocks.COLORS in props:
             have = set(unlocks.names(props, unlocks.COLORS))
@@ -187,6 +183,10 @@ class UnlockPages:
             ]
             self.unlock_section('Decals', chips)
             self.flow(chips)
+
+    def show_modules(self) -> None:
+        self.window.start_page('modules', 'SHIP MODULES')
+        game, props = self.window.game, self.window.open_doc.properties
         if unlocks.MODULES in props:
             for ship_class in unlocks.SHIP_CLASSES:
                 have = set(unlocks.modules(props, ship_class))

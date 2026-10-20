@@ -160,8 +160,10 @@ class EditorApp(Gtk.Application):
                 window.devices_page.show()
             elif self.page == 'blueprints':
                 window.unlock_pages.show_blueprints()
-            elif self.page == 'appearance':
-                window.unlock_pages.show_appearance()
+            elif self.page == 'colours':
+                window.unlock_pages.show_colours()
+            elif self.page == 'modules':
+                window.unlock_pages.show_modules()
             elif inv:
                 window.inventory_page.show(inv)
         if self.select is not None:

@@ -473,10 +473,10 @@ class EditorWindow(Gtk.ApplicationWindow):
             add('devices', 'Devices', None, self.devices_page.show)
         if self.game and unlocks.BLUEPRINTS in self.open_doc.properties:
             add('blueprints', 'Blueprints', None, self.unlock_pages.show_blueprints)
-        if self.game.ship_colors and any(
-            k in self.open_doc.properties for k in (unlocks.COLORS, unlocks.DECALS, unlocks.MODULES)
-        ):
-            add('appearance', 'Ship appearance', None, self.unlock_pages.show_appearance)
+        if self.game.ship_colors and any(k in self.open_doc.properties for k in (unlocks.COLORS, unlocks.DECALS)):
+            add('colours', 'Ship colours and decals', None, self.unlock_pages.show_colours)
+        if self.game.ship_modules and unlocks.MODULES in self.open_doc.properties:
+            add('modules', 'Ship modules', None, self.unlock_pages.show_modules)
         self.sidebar.append(label('HOME BASE', 'heading'))
         for inv in self.open_doc.inventories:
             if inv.kind != 'ship':
