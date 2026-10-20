@@ -83,8 +83,8 @@ class PilotPage:
         self.window.page.append(grid)
         self.window.page.append(
             label(
-                "The load menu takes the name, level and credits from the save's preview "
-                'file, which is updated when you save here. The file keeps its own name.',
+                "The information shown in the game's Load menu comes from a separate preview "
+                'file next to the main save file. The editor will keep the files in sync.',
                 'dim',
                 wrap=True,
             )

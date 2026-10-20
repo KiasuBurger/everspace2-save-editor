@@ -76,14 +76,6 @@ class PerksPage:
             groups = perks.by_companion(game, props) if game else []
             if groups:
                 self.window.page.append(label('COMPANION PERKS', 'section-title'))
-                self.window.page.append(
-                    label(
-                        'A level counts as reached when everything it costs has been handed in. '
-                        'Setting one here marks its costs as paid without taking the resources.',
-                        'dim',
-                        wrap=True,
-                    )
-                )
                 grid = Gtk.Grid(column_spacing=12, row_spacing=6)
                 row = 0
                 self.companion_notes = {}

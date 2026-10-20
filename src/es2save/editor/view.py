@@ -337,10 +337,10 @@ def _span(values: Sequence[str]) -> str:
 
 # The game's Resources page: (title, how the things are come by, sub-categories).
 RESOURCE_SECTIONS = (
-    ('Parts', 'Gathered by dismantling corresponding items', ('cat_crafting_resource',)),
-    ('Resources', 'Gathered by mining or shopping', ('cat_resource_ore', 'cat_resource_crystal', 'cat_resource_misc')),
-    ('Components', 'Gathered by crafting or shopping', ('cat_resource_tec',)),
-    ('Catalysts', 'Gathered by crafting', ('cat_crafting_catalyst',)),
+    ('Parts', 'Gathered by dismantling corresponding equipment', ('cat_crafting_resource',)),
+    ('Resources', 'Gathered by mining or trading', ('cat_resource_ore', 'cat_resource_crystal', 'cat_resource_misc')),
+    ('Components', 'Gathered by crafting or trading', ('cat_resource_tec',)),
+    ('Catalysts', 'Created by crafting', ('cat_crafting_catalyst',)),
 )
 
 

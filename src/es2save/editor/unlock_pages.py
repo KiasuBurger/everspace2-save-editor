@@ -105,12 +105,7 @@ class UnlockPages:
         self.window.mark_dirty()
 
     def show_blueprints(self) -> None:
-        self.window.start_page(
-            'blueprints',
-            'BLUEPRINTS',
-            'What the crafting menu can make, by rarity. The game unlocks a piece of equipment at '
-            'a rarity when %d of them have been dismantled at it.' % unlocks.THRESHOLD,
-        )
+        self.window.start_page('blueprints', 'BLUEPRINTS')
         game, props = self.window.game, self.window.open_doc.properties
         for title, members in unlocks.blueprint_sections(game):
             rows, singles, chips = [], [], []
