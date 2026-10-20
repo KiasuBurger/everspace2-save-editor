@@ -145,10 +145,15 @@ def wing_tiers(game: GameData, ship_class: str, wing: str) -> list[tuple[str, st
     """[(tier, extension), ...]: the forms of a wing, one for each tier of ship."""
     out: list[tuple[str, str]] = []
     for extension in game.ship_modules.get(ship_class, {}).get(wing, {}).get('extensions', []):
-        m = re.search(r'_T(\d)_', extension)
-        tier = int(m.group(1)) if m else len(out) + 1
+        tier = extension_tier(extension) or len(out) + 1
         out.append((TIERS[tier - 1] if 0 < tier <= len(TIERS) else str(tier), extension))
     return out
+
+
+def extension_tier(extension: str) -> int | None:
+    """The tier of ship a wing extension is for, from its name (..._Ext_T3_001)."""
+    m = re.search(r'_T(\d)_', extension)
+    return int(m.group(1)) if m else None
 
 
 def set_wing(props: Properties, game: GameData, ship_class: str, wing: str, extension: str, on: bool) -> None:

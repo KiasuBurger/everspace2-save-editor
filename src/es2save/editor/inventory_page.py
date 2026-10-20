@@ -18,7 +18,7 @@
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
-from .. import itemrules, items, perks
+from .. import itemrules, items, perks, ships, unlocks
 from ..items import Inventory, Item
 from . import view
 from .add_item import AddItemDialog
@@ -52,31 +52,16 @@ class InventoryPage:
         if inventory is None:
             return
         self.window.sync_nav(inventory.key)
-        top = Gtk.Box(spacing=10)
+        top = Gtk.Box(spacing=12)
         top.append(label(inventory.label.upper(), 'page-title'))
-        self.count_label = label(view.cargo_summary(inventory), 'dim')
-        top.append(self.count_label)
-        spacer = Gtk.Box(hexpand=True)
-        top.append(spacer)
-        if inventory.kind in ('station', 'ship'):
-            search = Gtk.SearchEntry(placeholder_text='Filter by name, type or rarity')
-            search.set_text(self.filter_text)
-            search.set_size_request(240, -1)
-            search.connect('search-changed', self.on_search)
-            top.append(search)
-            dropdown = Gtk.DropDown.new_from_strings([name for _, name in FILTERS])
-            dropdown.set_selected([k for k, _ in FILTERS].index(self.filter_category))
-            dropdown.connect('notify::selected', self.on_filter)
-            top.append(dropdown)
-        add = Gtk.Button(label='Add item…')
-        add.connect('clicked', lambda _b: self.add_item_dialog(inventory, items.CARGO))
-        if inventory.is_full():
-            add.set_sensitive(False)
-            add.set_tooltip_text('Every cargo slot is taken')
-        top.append(add)
+        model = ships.model_name(self.window.game, inventory.ship) if inventory.ship and self.window.game else None
+        if model:
+            top.append(label(model, 'page-model'))
+        self.cargo_tools(inventory, top)
         self.window.page.append(top)
 
         if inventory.kind == 'ship' and self.window.game:
+            self.build_ship(inventory)
             self.build_passives(inventory)
         equipment = {array: (name, lst) for array, name, lst in inventory.equipment()}
         if equipment:
@@ -128,28 +113,121 @@ class InventoryPage:
         else:
             self.window.select(None)
 
+    def cargo_tools(self, inventory: Inventory, box: Gtk.Box) -> None:
+        """How full the cargo is, the filter of its grid, and the button that adds to it, at
+        the right of a line."""
+        box.append(Gtk.Box(hexpand=True))
+        self.count_label = label(view.cargo_summary(inventory), 'dim')
+        self.count_label.set_valign(Gtk.Align.CENTER)
+        box.append(self.count_label)
+        if inventory.kind in ('station', 'ship'):
+            search = Gtk.SearchEntry(placeholder_text='Filter by name, type or rarity')
+            search.set_text(self.filter_text)
+            search.set_size_request(240, -1)
+            search.connect('search-changed', self.on_search)
+            box.append(search)
+            dropdown = Gtk.DropDown.new_from_strings([name for _, name in FILTERS])
+            dropdown.set_selected([k for k, _ in FILTERS].index(self.filter_category))
+            dropdown.connect('notify::selected', self.on_filter)
+            box.append(dropdown)
+        add = Gtk.Button(label='Add item…')
+        add.connect('clicked', lambda _b: self.add_item_dialog(inventory, items.CARGO))
+        if inventory.is_full():
+            add.set_sensitive(False)
+            add.set_tooltip_text('Every cargo slot is taken')
+        box.append(add)
+
+    def build_ship(self, inventory: Inventory) -> None:
+        """The ship's level, and the parts it was built with, which make the model the game
+        shows. How it looks in its custom styles is left to the game, and the Wraith has
+        neither to change."""
+        game, ship = self.window.game, inventory.ship
+        if not ship or not ships.ship_item(ship):
+            return
+        self.window.page.append(label('MODEL', 'section-title'))
+        line = Gtk.Box(spacing=24)
+        self.window.page.append(line)
+        current = ships.level(ship)
+        if ships.fixed(game, ship):
+            line.append(self.ship_field('Level', label(ships.level_name(current), 'perk-name')))
+            return
+        levels = list(range(1, ships.MAX_LEVEL + 1))
+        pick = self.window.dropdown(
+            levels, [ships.level_name(v) for v in levels], current, lambda v: self.change_level(inventory, v)
+        )
+        pick.set_hexpand(False)
+        line.append(self.ship_field('Level', pick))
+        cls = ships.ship_class(game, ship)
+        if not cls:
+            return
+        built = ships.modules(ship)
+        for kind, _row, title in ships.PARTS:
+            choices = ships.part_choices(game, ship, kind)
+            if not choices or kind not in built:
+                continue
+            pick = self.window.dropdown(
+                choices,
+                [unlocks.module_name(game, cls, m) for m in choices],
+                built[kind],
+                lambda new, k=kind: self.change_part(inventory, k, new),
+            )
+            pick.set_hexpand(False)
+            line.append(self.ship_field(title, pick))
+
+    @staticmethod
+    def ship_field(title: str, widget: Gtk.Widget) -> Gtk.Box:
+        """A label and its control, close together so that a line of them reads as pairs."""
+        box = Gtk.Box(spacing=6)
+        name = label(title, 'ship-field')
+        name.set_valign(Gtk.Align.CENTER)
+        box.append(name)
+        box.append(widget)
+        return box
+
+    def change_level(self, inventory: Inventory, value: int) -> None:
+        if not inventory.ship or value == ships.level(inventory.ship):
+            return
+        notes = ships.set_level(self.window.game, inventory.ship, inventory, value)
+        self.window.set_status('Ship level %s%s' % (ships.level_name(value), ''.join(', ' + n for n in notes)))
+        # the page is rebuilt, which must not happen inside the handler of one of its widgets
+        soon(lambda: self.reload_page())
+
+    def change_part(self, inventory: Inventory, kind: str, module: str) -> None:
+        if not inventory.ship:
+            return
+        ships.set_part(self.window.game, inventory.ship, kind, module)
+        self.window.set_status('Ship model %s' % (ships.model_name(self.window.game, inventory.ship) or ''))
+        self.window.mark_dirty()
+        soon(lambda: self.show(self.window.open_doc.inventory(inventory.key)))
+
     def build_passives(self, inventory: Inventory) -> None:
-        """The ship's own perks: the passive of its class and the ones it rolled, each of which
-        can be swapped for another from the class's pool."""
+        """The passives the ship rolled, each of which can be swapped for another from the
+        class's pool. The Wraith's are its own and stay. The passive every ship of the class
+        has is left out, like the class's other abilities."""
         game = self.window.game
         ship = items.get(inventory.ship or {}, 'ShipItemState')
         if not ship or not perks.passive_pool(game, ship):
             return
+        fixed = ships.fixed(game, inventory.ship or {})
         head = Gtk.Box(spacing=10)
         head.append(label('PASSIVES', 'section-title'))
         have, usual = perks.passives(game, ship), perks.passive_count(ship)
         head.append(
             label(
-                '%d, where the game gives a ship of this tier %d' % (len(have), usual) if len(have) != usual else '',
+                '%d, where the game gives a ship of this tier %d' % (len(have), usual)
+                if len(have) != usual and not fixed
+                else '',
                 'dim',
             )
         )
         self.window.page.append(head)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        box.add_css_class('perk-list')
-        fixed = perks.class_passive(ship)
+        grid = Gtk.Grid(column_spacing=10, row_spacing=4)
+        grid.add_css_class('perk-list')
+        self.window.page.append(grid)
+        for name in have if fixed else []:
+            self.perk_line(grid, label(game.attribute_name(name), 'perk-name'), self.passive_text(ship, name))
         if fixed:
-            box.append(self.perk_line(label(game.attribute_name(fixed), 'perk-name'), self.passive_text(ship, fixed)))
+            return
         for name in have:
             choices = itemrules.swap_choices(game, ship, name)
             pick = self.window.dropdown(
@@ -158,18 +236,16 @@ class InventoryPage:
                 name,
                 lambda new, old=name: self.swap_passive(inventory, old, new),
             )
-            pick.set_hexpand(False)
             remove = Gtk.Button(label='×')
             remove.add_css_class('danger')
             remove.set_tooltip_text('Remove this passive')
             remove.connect('clicked', lambda _b, n=name: self.change_passive(inventory, items.remove_attribute, n))
-            box.append(self.perk_line(pick, self.passive_text(ship, name), remove))
+            self.perk_line(grid, pick, self.passive_text(ship, name), remove)
         spare = itemrules.addable_stats(game, ship)
         if spare:
             pick = self.window.dropdown(
                 spare, [game.attribute_name(a) for a in spare], spare[0], lambda v: setattr(self, 'new_passive', v)
             )
-            pick.set_hexpand(False)
             self.new_passive = spare[0]
             add = Gtk.Button(label='Add passive')
             add.connect(
@@ -178,28 +254,41 @@ class InventoryPage:
                     inventory, items.add_attribute, self.new_passive, 0.5, list(game.attributes)
                 ),
             )
-            line = Gtk.Box(spacing=10)
-            line.append(pick)
-            line.append(add)
-            box.append(line)
-        self.window.page.append(box)
+            add.set_halign(Gtk.Align.START)
+            pick.set_hexpand(False)
+            row = self.grid_rows(grid)
+            grid.attach(pick, 0, row, 1, 1)
+            grid.attach(add, 1, row, 2, 1)
 
     def passive_text(self, ship: Item, name: str) -> str:
         value = self.window.game.range_value(items.template(ship), name, items.position(ship, name) or 0.0)
         return self.window.game.attribute_text(name, value) if value is not None else ''
 
-    def perk_line(self, first: Gtk.Widget, text: str, last: Gtk.Widget | None = None) -> Gtk.Box:
-        line = Gtk.Box(spacing=10)
-        first.set_size_request(250, -1)
+    @staticmethod
+    def grid_rows(grid: Gtk.Grid) -> int:
+        rows = 0
+        child = grid.get_first_child()
+        while child:
+            _col, row, _w, height = grid.query_child(child)
+            rows = max(rows, row + height)
+            child = child.get_next_sibling()
+        return rows
+
+    def perk_line(self, grid: Gtk.Grid, first: Gtk.Widget, text: str, last: Gtk.Widget | None = None) -> None:
+        """A row of the passives: the name or the choice of it, the button that removes it,
+        and what it does. The first column is as wide as the widest name."""
+        row = self.grid_rows(grid)
+        first.set_hexpand(False)
         first.set_valign(Gtk.Align.CENTER)
-        line.append(first)
+        grid.attach(first, 0, row, 1, 1)
         if last:
-            line.append(last)
+            last.set_valign(Gtk.Align.CENTER)
+            grid.attach(last, 1, row, 1, 1)
         description = label(text, 'perk-text', wrap=True)
         description.set_max_width_chars(70)
         description.set_hexpand(True)
-        line.append(description)
-        return line
+        description.set_valign(Gtk.Align.CENTER)
+        grid.attach(description, 2, row, 1, 1)
 
     def swap_passive(self, inventory: Inventory, old: str, new: str) -> None:
         if new != old:

@@ -60,6 +60,8 @@ window.es2 { --rarity: #6b7a82; }
   letter-spacing: 2px;
 }
 .page-title { font-size: 1.35em; font-weight: 700; letter-spacing: 1px; color: var(--strong); }
+.ship-field { color: var(--muted); }
+.page-model { font-size: 1.1em; font-weight: 600; color: var(--soft); }
 .dim { color: var(--dim); }
 .folder { color: var(--bright); }
 .settings .section-title { margin-top: 10px; }

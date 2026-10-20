@@ -137,6 +137,9 @@ SLOT_CATEGORY = {
     'Consumables': 'cat_consumable',
 }
 CARGO = 'Cargo'
+DEVICES = 'Devices'
+# a ship's Device Slots would round to five at level 7, but every ship in the saves has four
+MAX_DEVICE_SLOTS = 4
 
 
 # ---------------------------------------------------------------- fields
@@ -661,6 +664,21 @@ def create(
 # ---------------------------------------------------------------- inventories
 
 
+def slot_count(game: GameData, item: Item, attribute: str) -> int | None:
+    """A number of slots an item has or gives (cargo_slots, device_slots, cargo_slots_buff),
+    scaled for its level and rounded as the game stores whole-number attributes. 0 when the
+    item does not have the attribute, None when the game data cannot tell."""
+    pos = position(item, attribute)
+    if pos is None:
+        return 0
+    base = game.range_value(template(item), attribute, pos)
+    meta = game.attributes.get(attribute)
+    if base is None or not meta or 'growth_exp' not in meta:
+        return None
+    level = (get(item, 'ItemLevel', 1) or 1) + (get(item, 'VirtualLevelOffset', 0.0) or 0.0)
+    return int(base * level_scale(meta, level) + 0.5)
+
+
 class Inventory:
     """One InventoryState in the save: station storage, a ship, or a resource store.
 
@@ -726,25 +744,46 @@ class Inventory:
         game data cannot tell."""
         if self.kind != 'ship' or not self.ship or 'ShipItemState' not in self.ship:
             return None
-
-        def value(item: Item, attribute: str) -> int | None:
-            pos = position(item, attribute)
-            if pos is None:
-                return 0
-            base = game.range_value(template(item), attribute, pos)
-            meta = game.attributes.get(attribute)
-            if base is None or not meta or 'growth_exp' not in meta:
-                return None
-            level = (get(item, 'ItemLevel', 1) or 1) + (get(item, 'VirtualLevelOffset', 0.0) or 0.0)
-            return int(base * level_scale(meta, level) + 0.5)
-
-        parts = [value(self.ship['ShipItemState']['value'], 'cargo_slots')]
+        parts = [slot_count(game, self.ship['ShipItemState']['value'], 'cargo_slots')]
         parts += [
-            value(it, 'cargo_slots_buff') for name in SLOT_NAMES for it in self.slots.get(name, []) if not is_empty(it)
+            slot_count(game, it, 'cargo_slots_buff')
+            for name in SLOT_NAMES
+            for it in self.slots.get(name, [])
+            if not is_empty(it)
         ]
         if None in parts or not parts[0]:
             return None
         return sum(p for p in parts if p is not None)
+
+    def device_capacity(self, game: GameData) -> int | None:
+        """How many device slots the game gives this ship: its Device Slots, which grow with
+        its level, and never more than four. None for anything but a ship, or when the game
+        data cannot tell."""
+        if self.kind != 'ship' or not self.ship or 'ShipItemState' not in self.ship:
+            return None
+        count = slot_count(game, self.ship['ShipItemState']['value'], 'device_slots')
+        return min(count, MAX_DEVICE_SLOTS) if count else None
+
+    def fit_devices(self, game: GameData) -> list[Item]:
+        """Gives the ship the number of device slots the game would. Slots are added at the
+        end; to take some away, empty ones go first, last ones first, and then the devices in
+        the last slots are moved into the hold. A device that does not fit there stays where
+        it is. Returns the devices that were moved."""
+        capacity = self.device_capacity(game)
+        lst = self.slots.get(DEVICES)
+        if capacity is None or not lst:
+            return []
+        while len(lst) < capacity:
+            lst.append(blank(copy.deepcopy(lst[0])))
+        for index in range(len(lst) - 1, -1, -1):
+            if len(lst) > capacity and is_empty(lst[index]):
+                del lst[index]
+        moved = []
+        while len(lst) > capacity and self.free_cargo():
+            item = lst.pop()
+            self.add(item)
+            moved.append(item)
+        return moved
 
     def fit_cargo(self, game: GameData) -> bool:
         """Brings the hold to the size the game gives the ship. Empty slots are added at the
