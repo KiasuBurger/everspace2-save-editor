@@ -16,6 +16,7 @@
 """The selected item: its card as the game draws it, and the controls that change it."""
 
 import threading
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 from .. import chaos, itemrules, items
@@ -208,9 +209,10 @@ class ItemPanel:
             title = label('ATTRIBUTES', 'section-title')
             title.set_hexpand(True)
             head.append(title)
-            best = Gtk.Button(label='Max all')
-            best.connect('clicked', lambda _b: self.max_all())
-            head.append(best)
+            if self.maxable(card.stats):
+                best = Gtk.Button(label='Max all')
+                best.connect('clicked', lambda _b: self.max_all())
+                head.append(best)
             box.append(head)
             self.stat_rows: dict[str, tuple[Gtk.Label, Gtk.Label]] = {}
             for s in editable:
@@ -470,11 +472,15 @@ class ItemPanel:
         # the rows only change when the count crosses one of the catalyst's thresholds
         self.changed(rebuild_controls=before != after)
 
+    @staticmethod
+    def maxable(stats: Iterable[view.Stat]) -> list[view.Stat]:
+        """The stats with a slider: those 'Max all' sets to the top of their range."""
+        return [s for s in stats if s.kind not in ('fixed', 'count') and not s.locked]
+
     def max_all(self) -> None:
         item = self.edited_item()
-        for s in self.shown_card.stats:
-            if s.kind not in ('fixed', 'count') and not s.locked:
-                items.set_position(item, s.name, 1.0)
+        for s in self.maxable(self.shown_card.stats):
+            items.set_position(item, s.name, 1.0)
         self.changed(rebuild_controls=True)
 
     def swap_stat(self, old: str, new: str) -> None:
