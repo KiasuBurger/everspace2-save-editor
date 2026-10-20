@@ -30,9 +30,7 @@ from .. import items, savegame
 from ..savegame import Properties, Save
 
 PREVIEW_SUFFIX = '_PREVIEW_'
-# The state of every location and station visited is nine tenths of a late save and nothing
-# the editor shows, so it is carried through undecoded.
-UNREAD = ('BufferedLocationSaveStates', 'BufferedDockableStationInstances')
+UNREAD = savegame.LOCATIONS  # carried through undecoded
 # main save value -> field of the preview that the load menu shows
 PREVIEW_FIELDS = (('credits', 'credits'), ('PlayerLevel', 'PlayerLevel'), ('XP', 'XP'))
 

@@ -1181,6 +1181,11 @@ def build_gvas(save: Save) -> bytes:
     return bytes(w.b)
 
 
+# The state of every location and station visited: nine tenths of a late save, and nothing
+# the editor or the chaos tool reads, so they can carry it through undecoded (see `unread`).
+LOCATIONS = ('BufferedLocationSaveStates', 'BufferedDockableStationInstances')
+
+
 def loads(data: bytes, unread: Collection[str] = ()) -> Save:
     """Decodes a save file's bytes. 'container' records whether it was compressed. The
     top-level properties named in `unread` are carried along undecoded (see read_properties);
