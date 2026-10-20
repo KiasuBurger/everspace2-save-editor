@@ -26,11 +26,12 @@ import threading
 from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
-from .. import __version__, items, perks, unlocks
+from .. import __version__, devices, items, perks, unlocks
 from ..gamedata import GameData
 from ..gamepaths import find_save_dir
 from ..items import Inventory, Item
 from . import COPYRIGHT, LICENCE, config
+from .devices_page import DevicesPage
 from .document import Document
 from .game_files import GameFiles
 from .gtk import Gio, GLib, Gtk, Pango
@@ -146,6 +147,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.item_panel = ItemPanel(self)
         self.pilot_page = PilotPage(self)
         self.perks_page = PerksPage(self)
+        self.devices_page = DevicesPage(self)
         self.unlock_pages = UnlockPages(self)
 
         self.connect('close-request', self.on_close_request)
@@ -467,6 +469,8 @@ class EditorWindow(Gtk.ApplicationWindow):
         add('pilot', 'Credits and level', None, self.pilot_page.show)
         if perks.PLAYER_PERKS in self.open_doc.properties or perks.COMPANION_PERKS in self.open_doc.properties:
             add('perks', 'Perks', None, self.perks_page.show)
+        if self.game and devices.UNLOCKED in self.open_doc.properties:
+            add('devices', 'Devices', None, self.devices_page.show)
         if self.game and unlocks.BLUEPRINTS in self.open_doc.properties:
             add('blueprints', 'Blueprints', None, self.unlock_pages.show_blueprints)
         if self.game.ship_colors and any(

@@ -156,6 +156,8 @@ class EditorApp(Gtk.Application):
                 window.pilot_page.show()
             elif self.page == 'perks':
                 window.perks_page.show()
+            elif self.page == 'devices':
+                window.devices_page.show()
             elif self.page == 'blueprints':
                 window.unlock_pages.show_blueprints()
             elif self.page == 'appearance':

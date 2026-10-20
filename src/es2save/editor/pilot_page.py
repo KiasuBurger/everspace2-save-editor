@@ -28,7 +28,6 @@ PILOT_FIELDS = [  # (property, label, editable)
     ('credits', 'Credits', True),
     ('PlayerLevel', 'Level', True),
     ('XP', 'Experience', True),
-    ('DeviceUpgradeTokens', 'Device upgrade tokens', True),
     ('SaveGameVersion', 'Saved by game version', False),
     ('GameVersionOfStart', 'Started on version', False),
     ('CurrentLocation', 'Location', False),
