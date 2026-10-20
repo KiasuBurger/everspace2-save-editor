@@ -75,6 +75,7 @@ class Stat:
     value     text of the current value, '' when it cannot be worked out
     factor    Chaos factor applied to it, or None
     locked    the item's prefix or a catalyst holds it at its maximum, so it cannot be slid
+    sliding   its range has room to slide in: a bonus stat whose range is one value has not
     catalyst  the Mining or Okkar catalyst that added it: the card reads better with these
               under the catalyst than among the item's own stats"""
 
@@ -89,6 +90,7 @@ class Stat:
         self.shown: float | None = None
         self.factor: float | None = None
         self.locked = False
+        self.sliding = True
         self.catalyst: str | None = None  # the catalyst that added it, where the card says so under that catalyst
         self.text = ''  # the line the game's card shows for it
         self.modifier = 1.0  # what the item's prefix and catalysts multiply it by
@@ -195,6 +197,7 @@ def build_card(game: GameData, item: Item) -> Card:
         stat = Stat(a.name, game.attribute_name(a.name), a.position, kind)
         stat.base = a.base
         stat.locked = a.maximised
+        stat.sliding = kind == 'ranged' or (kind == 'bonus' and r is not None and r[0] != r[2])
         stat.factor = factors[a.index] if factors else None
         if a.base is not None:
             stat.modifier = game.modifier(card.affix, catalyst_ids, a.name)
@@ -207,6 +210,7 @@ def build_card(game: GameData, item: Item) -> Card:
             # the catalyst's own two: its kills, which can be set, and the bonus they have reached
             stat.catalyst = items.EVOLUTION
             stat.factor = None
+            stat.sliding = False
             if a.name == items.EVOLUTION_KILL_COUNT:
                 kills = items.evolution_kills(item) or 0
                 stat.kind, stat.shown = 'count', kills

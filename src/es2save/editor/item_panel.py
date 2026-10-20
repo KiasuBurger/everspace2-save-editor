@@ -378,12 +378,13 @@ class ItemPanel:
             outer.append(top)
             return outer
         outer.append(top)
-        if s.kind == 'fixed':
-            # nothing to slide: the game gives every item of this kind the same value
-            note = label('fixed', 'range')
+        if not s.sliding:
+            # nothing to slide: the game gives every item of this kind the same value, and a
+            # bonus stat of one value has it whatever its position
             value = label('', 'value', xalign=1.0)
             factor = label('', 'factor', xalign=1.0)
-            top.append(note)
+            if s.kind == 'fixed':
+                top.append(label('fixed', 'range'))
             top.append(value)
             if self.shown_card.chaos:  # the column is only there for the factors Chaos gives
                 top.append(factor)
@@ -475,7 +476,7 @@ class ItemPanel:
     @staticmethod
     def maxable(stats: Iterable[view.Stat]) -> list[view.Stat]:
         """The stats with a slider: those 'Max all' sets to the top of their range."""
-        return [s for s in stats if s.kind not in ('fixed', 'count') and not s.locked]
+        return [s for s in stats if s.sliding and not s.locked]
 
     def max_all(self) -> None:
         item = self.edited_item()
