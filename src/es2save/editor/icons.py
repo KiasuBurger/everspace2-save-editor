@@ -23,7 +23,7 @@ import os
 import shutil
 from collections.abc import Callable
 
-from .. import gameicons, gamepaths
+from .. import gamepaths
 
 # the folders the editor uses: all of each, or the textures named
 IMAGES = '../../../ES2/Content/UI/Images/'
@@ -55,6 +55,8 @@ def extract(game: str, destination: str, progress: Callable[[int, int], object] 
     """Writes the game's icons to destination as PNGs, replacing what is there; if it fails,
     what is there is left. progress is called with (done, total) as it goes. Raises OSError,
     or ValueError if the game's files are not as expected."""
+    from .. import gameicons  # brings in numpy, which only reading the game's files needs
+
     partial = destination + '.partial'
     shutil.rmtree(partial, ignore_errors=True)
     read = written = 0

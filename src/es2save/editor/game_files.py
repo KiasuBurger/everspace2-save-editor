@@ -20,7 +20,7 @@ import threading
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from .. import gamedata, gameidentifiers, gamepaths
+from .. import gamedata, gamepaths
 from ..gamedata import GameData
 from . import config, icons
 from .gtk import Gio, GLib, Gtk
@@ -135,6 +135,8 @@ class GameFiles:
             return False
 
         def work() -> None:
+            from .. import gameidentifiers  # brings in numpy, which only this needs
+
             errors = []
             for what, step in (
                 ('item definitions', data and (lambda: gameidentifiers.write(game, data))),
