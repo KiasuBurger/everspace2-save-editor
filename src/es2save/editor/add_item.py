@@ -118,7 +118,7 @@ class AddItemDialog(Gtk.Window):
         self.options.append(dd)
         if itemrules.is_device(game, chosen):
             pass  # at the player's level, as the game keeps every device
-        elif equipment:
+        elif not itemrules.stacks(game, chosen):
             self.options.append(label('Level', 'dim'))
             sb = Gtk.SpinButton.new_with_range(1, 99, 1)
             sb.set_value(self.level)

@@ -155,9 +155,15 @@ def is_stackable(game: GameData, item: Item) -> bool:
 
 
 def stacks(game: GameData, template: str) -> bool:
-    """Whether items of a template carry an amount rather than a level: everything but
-    equipment and devices."""
-    return not game.is_equipment(template) and not is_device(game, template)
+    """Whether items of a template have an amount instead of a level. All items have an
+    amount except equipment, devices and signal decoders."""
+    return not game.is_equipment(template) and not is_device(game, template) and not is_decoder(game, template)
+
+
+def is_decoder(game: GameData, template: str) -> bool:
+    """A signal decoder is always one item, not a stack. Its level is the level of the area
+    that it reveals."""
+    return game.sub_category(template) == 'cat_coordinates'
 
 
 def is_device(game: GameData, template: str) -> bool:
