@@ -15,6 +15,7 @@
 
 """The selected item: its card as the game draws it, and the controls that change it."""
 
+import math
 import threading
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
@@ -216,7 +217,7 @@ class ItemPanel:
                 best.connect('clicked', lambda _b: self.max_all())
                 head.append(best)
             box.append(head)
-            self.stat_rows: dict[str, tuple[Gtk.Label, Gtk.Label]] = {}
+            self.stat_rows: dict[str, tuple[Gtk.Label | Gtk.Entry, Gtk.Label]] = {}
             for s in editable:
                 box.append(self.stat_row(item, s))
             if folded:
@@ -381,6 +382,7 @@ class ItemPanel:
             return outer
         outer.append(top)
         line = top
+        value: Gtk.Label | Gtk.Entry = label('', 'value', xalign=1.0)
         if not s.sliding:
             # nothing to slide: the game gives every item of this kind the same value, and a
             # bonus stat of one value has it whatever its position
@@ -398,7 +400,8 @@ class ItemPanel:
                 scale.set_tooltip_text("Held at its maximum by the item's prefix or a catalyst")
             scale.connect('value-changed', lambda sc, n=s.name: self.set_position(n, sc.get_value()))
             line.append(scale)
-        value = label('', 'value', xalign=1.0)
+            if not s.locked:
+                value = self.value_entry(item, s.name, scale)
         factor = label('', 'factor', xalign=1.0)
         line.append(value)
         if self.shown_card.chaos:  # the column is only there for the factors Chaos gives
@@ -407,9 +410,60 @@ class ItemPanel:
         self.fill_stat_row(s)
         return outer
 
+    def value_entry(self, item: Item, name: str, scale: Gtk.Scale) -> Gtk.Entry:
+        """The value beside a slider, in an entry. The user can type a value instead of using the
+        slider. When the user presses Enter or leaves the entry, the slider moves to the value.
+        A value outside the range moves the slider to the nearest end."""
+        entry = Gtk.Entry(xalign=1.0, width_chars=9, max_width_chars=9)
+        entry.add_css_class('value')
+        entry.set_tooltip_text('Type a value within the range and press Enter')
+
+        def commit(*_args: object) -> None:
+            # the entry also loses focus when the panel rebuilds the controls for a different
+            # item. Do not apply the text to that item.
+            if self.window.busy or self.window.selected_item() is not item:
+                return
+            stat = next((st for st in self.shown_card.stats if st.name == name), None)
+            if stat is None:
+                return
+            pos = self.typed_position(stat, entry.get_text())
+            if pos is not None:
+                scale.set_value(pos)  # the slider's handler sets the position
+            self.refresh_stat_rows()  # replace the typed text with the calculated value
+
+        entry.connect('activate', commit)
+        focus = Gtk.EventControllerFocus()
+        focus.connect('leave', commit)
+        entry.add_controller(focus)
+        return entry
+
+    def typed_position(self, s: view.Stat, text: str) -> float | None:
+        """The position in the range of a typed value, limited to the range. None if the text is
+        not a number. If the values at the ends of the range are not known, the text is a
+        percentage of the range."""
+        if s.span:
+            value = self.window.game.read_value(s.name, text)
+            low, high = s.span
+            if value is None or low == high:
+                return None
+            pos = (value - low) / (high - low)
+        else:
+            text = text.strip().removesuffix('of range').strip().removesuffix('%')
+            try:
+                pos = float(text) / 100
+            except ValueError:
+                return None
+        if math.isnan(pos):
+            return None
+        return max(0.0, min(1.0, pos))
+
     def fill_stat_row(self, s: view.Stat) -> None:
         value, factor = self.stat_rows[s.name]
-        value.set_label(s.value or '%d%% of range' % round(s.position * 100))
+        text = s.value or '%d%% of range' % round(s.position * 100)
+        if isinstance(value, Gtk.Entry):
+            value.set_text(text)
+        else:
+            value.set_label(text)
         for c in ('good', 'bad'):
             factor.remove_css_class(c)
         if s.factor is None:

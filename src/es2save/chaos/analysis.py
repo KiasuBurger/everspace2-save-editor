@@ -152,7 +152,8 @@ class Attribute:
     position   ValuePositionInRange, or 1.0 when the item's prefix or a catalyst puts it there
     maximised  the prefix or a catalyst holds it at the top of its range
     direction  +1 larger is better, -1 smaller is better, 0 not scored
-    base       the value before Chaos, derived from the position (None if not derivable)"""
+    base       the value before Chaos, derived from the position (None if not derivable)
+    span       the values before Chaos at the two ends of the range (None if not derivable)"""
 
     def __init__(self, name: str, stored: int, position: float) -> None:
         self.name = name
@@ -162,6 +163,7 @@ class Attribute:
         self.maximised = False
         self.direction = 1
         self.base: float | None = None
+        self.span: tuple[float, float] | None = None
 
 
 class Analysis:
@@ -257,15 +259,19 @@ def analyse(
         r = ranges.get(a.name) or _borrowed_range(item, a.name, game_items)
         v = gamedata.value_in_range(r, a.position)
         exact = False
+        scale = None  # the multiplier for the values of the range
         if v is not None and a.name in meta:
-            a.base = v * gamedata.level_scale(meta[a.name], out.level)
+            scale = gamedata.level_scale(meta[a.name], out.level)
             exact = meta[a.name].get('growth_op') == 'c' or meta[a.name].get('growth', 1) == 1
         elif v is not None and r is not None and r[1] == '!':
-            a.base, exact = v, True
+            scale, exact = 1.0, True
         elif v is not None and r is not None and r[1] == '-' and out.level_scale:
-            a.base = v * out.level_scale
+            scale = out.level_scale
         elif not out.validated:
             a.base = original.get(a.name)
+        if v is not None and r is not None and scale is not None:
+            a.base = v * scale
+            a.span = (r[0] * scale, r[2] * scale)
         recorded = original.get(a.name)
         if (
             recorded is not None

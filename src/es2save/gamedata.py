@@ -229,6 +229,29 @@ class GameData:
             return sign + ('%.1f' % number).rstrip('0').rstrip('.') + unit
         return '%s%d%s' % (sign, round(number), unit)
 
+    def read_value(self, attribute: str, text: str) -> float | None:
+        """The stored value of typed text. The text has the format that format_value writes, with
+        or without the unit. None if the text is not a number."""
+        meta = self.attributes.get(attribute, {})
+        kind, unit = meta.get('type', ''), meta.get('unit', '')
+        if kind == 'percent':
+            unit = '%'
+        text = text.strip()
+        if unit and text.endswith(unit):
+            text = text[: -len(unit)].strip()
+        thousands = text.lower().endswith('k')
+        try:
+            number = float(text[:-1] if thousands else text) * (1000 if thousands else 1)
+        except ValueError:
+            return None
+        if unit == '%':
+            return number / 100
+        if unit in ('m', 'm/s', 'm/s^2'):
+            return number * 100
+        if unit == 'km':
+            return number * 100000
+        return number
+
     def stat_text(self, attribute: str, value: float | None) -> str:
         """An attribute as an item card states it: the short sentence where the game has one
         ('11.5/s Fire Rate'), else the full one ('10% of kinetic damage bypasses the shield.'),

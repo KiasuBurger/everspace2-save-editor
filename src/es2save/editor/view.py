@@ -76,6 +76,7 @@ class Stat:
     factor    Chaos factor applied to it, or None
     locked    the item's prefix or a catalyst holds it at its maximum, so it cannot be slid
     sliding   its range has room to slide in: a bonus stat whose range is one value has not
+    span      the values shown at the two ends of its range, None when they are not known
     catalyst  the Mining or Okkar catalyst that added it: the card reads better with these
               under the catalyst than among the item's own stats"""
 
@@ -88,6 +89,7 @@ class Stat:
         self.display = ''  # the value rounded as the game's card shows it
         self.base: float | None = None
         self.shown: float | None = None
+        self.span: tuple[float, float] | None = None
         self.factor: float | None = None
         self.locked = False
         self.sliding = True
@@ -201,7 +203,10 @@ def build_card(game: GameData, item: Item) -> Card:
         stat.factor = factors[a.index] if factors else None
         if a.base is not None:
             stat.modifier = game.modifier(card.affix, catalyst_ids, a.name)
-            stat.shown = a.base * stat.modifier * (stat.factor if stat.factor is not None else 1.0)
+            multiplier = stat.modifier * (stat.factor if stat.factor is not None else 1.0)
+            stat.shown = a.base * multiplier
+            if a.span:
+                stat.span = (a.span[0] * multiplier, a.span[1] * multiplier)
             stat.value = game.format_value(a.name, stat.shown)
             stat.display = game.format_value(a.name, stat.shown, precise=False)
             stat.text = game.stat_text(a.name, stat.shown)
