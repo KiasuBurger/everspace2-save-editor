@@ -174,6 +174,13 @@ class ItemPanel:
             box.append(
                 self.window.row('Level', self.window.spin(card.level, 1, 99, lambda v: self.set_field('ItemLevel', v)))
             )
+        if card.max_ammo is not None:
+            # a save can hold more ammo than the weapon's capacity. The control keeps that
+            # amount until the user changes it.
+            top = max(card.max_ammo, card.ammo or 0)
+            ammo = self.window.spin(card.ammo or 0, 0, top, lambda v: self.set_field('Ammo', v))
+            ammo.set_tooltip_text('%d when full' % card.max_ammo)
+            box.append(self.window.row('Ammo', ammo))
         if card.equipment or card.rarity != 'None':
             allowed = game.rarities(tpl)
             box.append(self.window.row('Rarity', self.window.dropdown(allowed, allowed, card.rarity, self.set_rarity)))

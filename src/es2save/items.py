@@ -62,6 +62,7 @@ LEVEL_OFFSETS = {
 ASCENDANT_BASE_OFFSET = 4.6
 ASCENDANT_MAX_COUNT = 7
 ASCENDANT_RANK = 'ascendant_rank'
+MAX_AMMO = 'secondary_max_ammo'  # a secondary weapon's ammo when full
 ASCENDANT_COUNT_KEY = 'AscendantUpgradeCount'
 RADIANT_BLESSING = 'radiant_blessing_'  # prefix of the extra attribute a Radiant reliquary carries
 CHAOS = 'catalyst_legendary_chaos'
@@ -657,6 +658,9 @@ def create(
     put(item, 'AttributeStates', [_state(n, position_value) for n in names])
     sort_attributes(item, list(game.ranges(template_id)))
     set_rarity(item, rarity_name)
+    full = game.ranges(template_id).get(MAX_AMMO)
+    if full and 'Ammo' in item:
+        put(item, 'Ammo', int(full[2]))  # a new secondary weapon has full ammo, as in the game
     return item
 
 

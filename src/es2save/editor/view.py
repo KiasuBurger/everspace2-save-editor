@@ -127,6 +127,8 @@ class Card:
         self.grade = 'None'
         self.level = 0
         self.amount = 0
+        self.ammo: int | None = None  # a secondary weapon's ammo, and what it holds when full
+        self.max_ammo: int | None = None
         self.affix = items.EMPTY
         self.effect = ''  # legendary effect text with its numbers filled in
         self.description = ''
@@ -240,6 +242,10 @@ def build_card(game: GameData, item: Item) -> Card:
             for s in mine:
                 s.catalyst = entry.id
             entry.effects[:0] = [s.text for s in mine]
+
+    full = next((s.shown for s in card.stats if s.name == items.MAX_AMMO), None)
+    if full is not None and 'Ammo' in item:
+        card.ammo, card.max_ammo = items.get(item, 'Ammo', 0), round(full)
 
     effect = info.get('legendary_effect', '')
     card.dps = weapon_dps(card)
