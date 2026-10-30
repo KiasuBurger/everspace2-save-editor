@@ -105,10 +105,12 @@ jobs:
           Stop-Process -Id $editor.Id -Force
           if ($titles -notmatch 'Everspace 2') { throw "the editor is not showing its window" }
 
+      # a build is kept for a week: a release takes the one from its own run
       - uses: actions/upload-artifact@v7
         with:
           name: es2save-windows
           path: dist
+          retention-days: 7
 
   # a tag that names a version gets a release, with the folder zipped as its download
   release:
