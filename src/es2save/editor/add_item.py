@@ -146,6 +146,7 @@ class AddItemDialog(Gtk.Window):
             amount=self.amount,
             position_value=1.0 if equipment else 0.5,
         )
+        itemrules.sync_legendary_parts(game, item)
         note = window.inventory_page.place_new_item(self.inventory, self.array, self.index, item)
         window.set_status('Added %s' % game.name(chosen) + ('. ' + note if note else ''))
         self.close()

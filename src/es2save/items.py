@@ -88,6 +88,7 @@ EVOLUTION_BONUS = 'evolution_catalyst_buff'  # the attribute whose position is t
 EVOLUTION_KILL_COUNT = 'evolution_catalyst_kill_count'
 EVOLUTION_ATTRIBUTES = (EVOLUTION_BONUS, EVOLUTION_KILL_COUNT)
 EVOLUTION_STEPS = ((300, 0.2), (100, 0.1))  # kills, and the damage bonus from then on
+LEGENDARY_PARTS = 'LegendaryCraftingResources'  # the CustomData key for the parts count of a legendary signal decoder
 EVOLUTION_EARNS = 1000  # kills at which the item gets one more bonus attribute
 OKKAR = 'catalyst_okkar_'
 HEXASPATIAL = 'catalyst_ancient_energy_shielding'  # the one a legendary takes that is not legendary
@@ -280,6 +281,19 @@ def ascendant_count(item: Item) -> int | None:
     if count is None and rank is not None:
         count = round(rank * ASCENDANT_MAX_COUNT)
     return count or 0
+
+
+def legendary_parts(item: Item) -> int | None:
+    """The number of legendary crafting parts that a signal decoder gives, or None if it gives no parts."""
+    parts = custom(item, LEGENDARY_PARTS)
+    return int(parts) if parts is not None else None
+
+
+def set_legendary_parts(item: Item, parts: int | None) -> None:
+    if parts is None:
+        _remove_custom(item, LEGENDARY_PARTS)
+    else:
+        _put_custom(item, LEGENDARY_PARTS, 'int32', int(parts))
 
 
 def set_ascendant_count(item: Item, count: float) -> None:

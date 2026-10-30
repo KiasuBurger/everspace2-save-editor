@@ -209,6 +209,7 @@ button.tile.empty:hover { border-color: var(--accent); }
 .card .loot-quality { color: var(--bright); font-weight: 600; }
 .card .loot-quality.good { color: var(--good); }
 .card .loot-quality.bad { color: var(--bad); }
+.card .legendary-parts { color: mix(var(--rarity), var(--text), var(--rarity-ink)); font-weight: 600; }
 
 .resource-head { border-bottom: 1px solid var(--rule); padding-bottom: 4px; margin-top: 10px; }
 .section-note { color: var(--muted); font-style: italic; }

@@ -166,6 +166,27 @@ def is_decoder(game: GameData, template: str) -> bool:
     return game.sub_category(template) == 'cat_coordinates'
 
 
+def legendary_parts(game: GameData, item: Item) -> int | None:
+    """The number of legendary crafting parts that the game gives a signal decoder when it
+    makes the decoder (UItemLib::GenerateItemWithStream_Internal). A legendary decoder gets 10
+    to 25 parts. The number increases with the loot quality of its mutators. Decoders of other
+    rarities get no parts. The item keeps the number. Its card shows the number, and the game
+    drops that many parts when the player uses the decoder. Returns None for no parts, and
+    also when the catalogue has no mutators table."""
+    quality = game.loot_quality(n for n, _ in items.attributes(item))
+    if quality is None or not is_decoder(game, items.template(item)) or items.rarity(item) != 'Legendary':
+        return None
+    return int(max(min(quality * 0.25, 1.0), 0.0) * 15 + 10)
+
+
+def sync_legendary_parts(game: GameData, item: Item) -> None:
+    """Sets the legendary crafting parts of a signal decoder to the number that the game gives
+    for its rarity and mutators. Does not change other items. Does not change any item when
+    the catalogue has no mutators table."""
+    if game.mutators and is_decoder(game, items.template(item)):
+        items.set_legendary_parts(item, legendary_parts(game, item))
+
+
 def is_device(game: GameData, template: str) -> bool:
     """Devices have a level, which the game holds at the player's
     (UPlayerData::SetAllDeviceItemLevelsToPlayerLevel), and nothing else to choose."""

@@ -50,6 +50,8 @@ class ItemPanel:
 
     def changed(self, rebuild_controls: bool = False) -> None:
         """Call after changing the selected item: refreshes its tile, the card and the title."""
+        # the count of legendary crafting parts follows the rarity and the mutators
+        itemrules.sync_legendary_parts(self.window.game, self.edited_item())
         self.window.mark_dirty()
         tile = self.window.tiles.get(self.window.selection) if self.window.selection else None
         if tile:
@@ -133,6 +135,8 @@ class ItemPanel:
         if card.loot_quality_text:
             tone = 'good' if (card.loot_quality or 0) > 0 else 'bad' if (card.loot_quality or 0) < 0 else ''
             inner.append(label(card.loot_quality_text, ('loot-quality ' + tone).strip()))
+        if card.legendary_parts is not None:
+            inner.append(label('Legendary crafting parts: %d' % card.legendary_parts, 'legendary-parts'))
         if card.rank:
             inner.append(label('★ ' + card.rank, 'rank'))
         for c in card.catalysts:

@@ -31,6 +31,7 @@ from ..itemrules import (
     flawless_fits,
     is_decoder,
     is_stackable,
+    legendary_parts,
     radiant_blessings,
 )
 from ..items import Inventory, Item
@@ -139,6 +140,7 @@ class Card:
         self.rank = ''  # 'Ascendant Rank: 8/8'
         self.loot_quality: float | None = None  # the loot quality of a signal decoder, as a fraction (0.3 is +30%)
         self.loot_quality_text = ''  # 'Loot quality: +30%', the text that the game's card shows
+        self.legendary_parts: int | None = None  # the parts count that a legendary decoder keeps
         self.catalysts: list[Catalyst] = []  # [Catalyst]
         self.warnings: list[str] = []
         self.chaos = False
@@ -260,6 +262,7 @@ def build_card(game: GameData, item: Item) -> Card:
     if card.loot_quality is not None:
         # WG_LootQualityBox shows a whole percentage with a sign. It rounds half to even.
         card.loot_quality_text = 'Loot quality: %+d%%' % round(card.loot_quality * 100)
+        card.legendary_parts = items.legendary_parts(item)
     card.effect = re.sub(r'\{(\w+)\}', lambda m: values.get(m.group(1), m.group(0)), effect)
 
     # Only what the current game would not produce is worth a warning. Everything found on
@@ -300,9 +303,18 @@ def build_card(game: GameData, item: Item) -> Card:
         card.warnings.append('A reliquary is Radiant exactly when it has a radiant blessing.')
     if card.affix in game.affixes and card.affix not in game.affixes_for(tpl):
         card.warnings.append('The %s prefix does not apply to this kind of item.' % game.affix_name(card.affix))
+    expected = legendary_parts(game, item)
+    if card.loot_quality is not None and card.legendary_parts != expected:
+        card.warnings.append(
+            'The game would give this decoder %s, not %s.' % (_parts(expected), _parts(card.legendary_parts))
+        )
     if card.chaos and card.rarity != 'Legendary':
         card.warnings.append('Chaos only works on legendary items.')
     return card
+
+
+def _parts(count: int | None) -> str:
+    return 'no legendary crafting parts' if count is None else '%d legendary crafting parts' % count
 
 
 def describe_catalyst(game: GameData, item: Item, catalyst: str) -> Catalyst:

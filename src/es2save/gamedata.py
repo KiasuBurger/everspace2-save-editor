@@ -25,6 +25,7 @@ is missing.
 import json
 import os
 import re
+import struct
 from collections.abc import Collection, Iterable, Sequence
 from typing import Any
 
@@ -121,6 +122,10 @@ def find_game_data(explicit: str | None = None, near: str | None = None) -> str 
     return None
 
 
+def _float32(value: float) -> float:
+    return float(struct.unpack('<f', struct.pack('<f', value))[0])
+
+
 class GameData:
     def __init__(self, data: dict[str, Any] | None = None, path: str | None = None) -> None:
         data = data or {}
@@ -207,7 +212,10 @@ class GameData:
         Returns None if the catalogue has no mutators table."""
         if not self.mutators:
             return None
-        return sum(self.mutators.get(a, {}).get('loot_quality', 0) for a in attributes)
+        total = 0.0  # the game adds the bonuses as float32 values, in the order of the attributes
+        for a in attributes:
+            total = _float32(total + _float32(self.mutators.get(a, {}).get('loot_quality', 0)))
+        return total
 
     def is_equipment(self, template: str) -> bool:
         return self.category(template) in EQUIPMENT_CATEGORIES
