@@ -196,6 +196,12 @@ def radiant_blessings(game: GameData, template: str) -> list[str]:
     return [a for a in game.bonus_attributes(template) if items.is_radiant_blessing(a)]
 
 
+def takes_stats(game: GameData, template: str) -> bool:
+    """Whether the user can add bonus stats to items of a template. This is true for equipment
+    and for signal decoders, whose bonus stats are mutators."""
+    return game.is_equipment(template) or is_decoder(game, template)
+
+
 def addable_stats(game: GameData, item: Item) -> list[str]:
     used = {n for n, _ in items.attributes(item)}
     return [a for a in game.bonus_attributes(items.template(item)) if a not in used]

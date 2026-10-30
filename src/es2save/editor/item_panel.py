@@ -235,7 +235,7 @@ class ItemPanel:
                 expander.set_child(inner)
                 box.append(expander)
             addable = itemrules.addable_stats(game, item)
-            if addable and card.equipment:
+            if addable and itemrules.takes_stats(game, tpl):
                 self.new_stat = addable[0]
                 add = Gtk.Box(spacing=8)
                 add.append(
