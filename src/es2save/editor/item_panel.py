@@ -184,7 +184,7 @@ class ItemPanel:
         if card.equipment or card.rarity != 'None':
             allowed = game.rarities(tpl)
             box.append(self.window.row('Rarity', self.window.dropdown(allowed, allowed, card.rarity, self.set_rarity)))
-        if card.rarity == 'Ascendant':
+        if card.rarity == 'Ascendant' and card.equipment:  # only equipment has a rank
             count = items.ascendant_count(item)
             box.append(
                 self.window.row(
@@ -489,7 +489,7 @@ class ItemPanel:
         self.changed()
 
     def set_rarity(self, rarity: str) -> None:
-        items.set_rarity(self.edited_item(), rarity)
+        items.set_rarity(self.edited_item(), rarity, ranked=self.shown_card.equipment)
         self.changed(rebuild_controls=True)
 
     def set_ascendant(self, count: int) -> None:

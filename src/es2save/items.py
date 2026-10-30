@@ -214,16 +214,16 @@ def sovereign_bonus(item: Item) -> float:
     return min(max(get(item, 'VirtualLevelOffset') - base, 0.0), SOVEREIGN_LEVELS)
 
 
-def set_rarity(item: Item, rarity_name: str) -> None:
+def set_rarity(item: Item, rarity_name: str, ranked: bool = True) -> None:
     """Changes the rarity, dropping a grade the new rarity cannot have and adding or removing
-    the Ascendant rank."""
+    the Ascendant rank. An item that is not `ranked` gets no rank when it becomes Ascendant."""
     if rarity_name not in RARITIES:
         raise ValueError('unknown rarity %r' % rarity_name)
     bonus = sovereign_bonus(item)
     _put_enum(item, 'Rarity', rarity_name, 'EItemRarity')
     if 'Grade' in item and grade(item) not in grades_for(rarity_name):
         _put_enum(item, 'Grade', 'None', 'EItemGrade')
-    if rarity_name == 'Ascendant':
+    if rarity_name == 'Ascendant' and ranked:
         set_ascendant_count(item, ascendant_count(item) or 0)
     else:
         remove_attribute(item, ASCENDANT_RANK)
@@ -657,7 +657,7 @@ def create(
     names = game.fixed_attributes(template_id) + [b for b in bonus]
     put(item, 'AttributeStates', [_state(n, position_value) for n in names])
     sort_attributes(item, list(game.ranges(template_id)))
-    set_rarity(item, rarity_name)
+    set_rarity(item, rarity_name, ranked=game.is_equipment(template_id))
     full = game.ranges(template_id).get(MAX_AMMO)
     if full and 'Ammo' in item:
         put(item, 'Ammo', int(full[2]))  # a new secondary weapon has full ammo, as in the game

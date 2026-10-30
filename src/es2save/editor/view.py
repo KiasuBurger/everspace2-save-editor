@@ -250,7 +250,7 @@ def build_card(game: GameData, item: Item) -> Card:
     effect = info.get('legendary_effect', '')
     card.dps = weapon_dps(card)
     count = items.ascendant_count(item)
-    if count is not None:
+    if count is not None and card.equipment:
         card.rank = game.stat_text(items.ASCENDANT_RANK, count + 1)
     card.effect = re.sub(r'\{(\w+)\}', lambda m: values.get(m.group(1), m.group(0)), effect)
 
