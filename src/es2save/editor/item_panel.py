@@ -130,6 +130,9 @@ class ItemPanel:
                     continue  # already part of the effect text
                 stats.append(label(s.text or '%d%% %s' % (round(s.position * 100), s.label), 'stat-line', wrap=True))
             inner.append(stats)
+        if card.loot_quality_text:
+            tone = 'good' if (card.loot_quality or 0) > 0 else 'bad' if (card.loot_quality or 0) < 0 else ''
+            inner.append(label(card.loot_quality_text, ('loot-quality ' + tone).strip()))
         if card.rank:
             inner.append(label('★ ' + card.rank, 'rank'))
         for c in card.catalysts:

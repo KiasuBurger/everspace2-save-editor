@@ -29,6 +29,7 @@ from ..itemrules import (
     effective_affix,
     evolution_fits,
     flawless_fits,
+    is_decoder,
     is_stackable,
     radiant_blessings,
 )
@@ -136,6 +137,8 @@ class Card:
         self.stats: list[Stat] = []
         self.dps: list[tuple[str, str]] = []  # [(label, text)] for weapons
         self.rank = ''  # 'Ascendant Rank: 8/8'
+        self.loot_quality: float | None = None  # the loot quality of a signal decoder, as a fraction (0.3 is +30%)
+        self.loot_quality_text = ''  # 'Loot quality: +30%', the text that the game's card shows
         self.catalysts: list[Catalyst] = []  # [Catalyst]
         self.warnings: list[str] = []
         self.chaos = False
@@ -252,6 +255,11 @@ def build_card(game: GameData, item: Item) -> Card:
     count = items.ascendant_count(item)
     if count is not None and card.equipment:
         card.rank = game.stat_text(items.ASCENDANT_RANK, count + 1)
+    if is_decoder(game, tpl):
+        card.loot_quality = game.loot_quality(name for name, _ in items.attributes(item))
+    if card.loot_quality is not None:
+        # WG_LootQualityBox shows a whole percentage with a sign. It rounds half to even.
+        card.loot_quality_text = 'Loot quality: %+d%%' % round(card.loot_quality * 100)
     card.effect = re.sub(r'\{(\w+)\}', lambda m: values.get(m.group(1), m.group(0)), effect)
 
     # Only what the current game would not produce is worth a warning. Everything found on

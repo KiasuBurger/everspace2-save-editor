@@ -175,16 +175,17 @@ def read_catalysts(files: dict[str, bytes]) -> Table:
 
 
 def read_mutators(files: dict[str, bytes]) -> Table:
-    """mutators.csv: id, a weight and three flags. The file does not name its columns. The
-    names here come from the data in saves:
+    """mutators.csv: the fields of the game's FMutator struct, in the same order. The file does
+    not name its columns. The struct gives the names.
 
-    high_risk_areas  only mutators with this flag occur in high-risk areas and on signal decoders
-    rifts            the mutators that can occur in an ancient rift have this flag
-    rift_bosses      only some mutator_riftboss_* mutators have this flag"""
+    loot_quality     LootQualityBonus: the mutator adds this value to the loot quality of its area
+    high_risk_areas  bAllowedInHighRiskAreas: only these mutators occur in high-risk areas and on signal decoders
+    rifts            bAllowedInRifts
+    rift_bosses      bAllowedOnlyForRiftBosses"""
     out = collections.OrderedDict()
     for r in load(files, 'mutators.csv'):
         out[r[0]] = {
-            'weight': number(r[1]),
+            'loot_quality': number(r[1]),
             'high_risk_areas': r[2] == '1',
             'rifts': r[3] == '1',
             'rift_bosses': r[4] == '1',

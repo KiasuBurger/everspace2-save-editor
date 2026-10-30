@@ -131,8 +131,11 @@ class GameData:
         self.attributes = data.get('attributes', {})
         self.categories = data.get('categories', {})
         self.mutators = data.get('mutators', {})  # the modifiers of high-risk areas and rifts
-        # true if the catalogue does not have all the sections. An older editor wrote such a catalogue.
-        self.outdated = bool(data) and any(key not in data for key in SECTIONS)
+        # True if an older editor wrote the catalogue. Such a catalogue does not have all the
+        # sections, or its mutators have a 'weight' instead of a loot quality.
+        self.outdated = bool(data) and (
+            any(key not in data for key in SECTIONS) or any('loot_quality' not in m for m in self.mutators.values())
+        )
         # what a ship can be made to look like (see unlocks.py)
         self.ship_colors = data.get('ship_colors', {})
         self.ship_decals = data.get('ship_decals', {})
@@ -196,6 +199,15 @@ class GameData:
         if not self.mutators:
             return True
         return bool(self.mutators.get(attribute, {}).get('high_risk_areas'))
+
+    def loot_quality(self, attributes: Iterable[str]) -> float | None:
+        """The loot quality of an area with these mutators, as a fraction (0.3 is +30%). The
+        value is the sum of their bonuses, as UItemLib::GetMutatorValueSum calculates it. A
+        signal decoder's card shows it as a percentage. Attributes that are not mutators add 0.
+        Returns None if the catalogue has no mutators table."""
+        if not self.mutators:
+            return None
+        return sum(self.mutators.get(a, {}).get('loot_quality', 0) for a in attributes)
 
     def is_equipment(self, template: str) -> bool:
         return self.category(template) in EQUIPMENT_CATEGORIES
