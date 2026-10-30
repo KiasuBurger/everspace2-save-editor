@@ -31,6 +31,18 @@ from typing import Any
 from . import gamepaths
 
 GAME_DATA_NAME = 'game_identifiers.json'
+# the sections of the catalogue that GameData reads
+SECTIONS = (
+    'items',
+    'affixes',
+    'catalysts',
+    'attributes',
+    'categories',
+    'ship_colors',
+    'ship_decals',
+    'ship_modules',
+    'mutators',
+)
 _TAGS = re.compile(r'</?[A-Za-z_]*>')  # rich-text markup such as <highlight>10s</>
 
 EQUIPMENT_CATEGORIES = (
@@ -79,6 +91,15 @@ def cache_file() -> str:
     return os.path.join(gamepaths.cache_dir(), GAME_DATA_NAME)
 
 
+def cache_to_build(game: GameData) -> str | None:
+    """The cache file, if the editor must build it from the game. This is when there is no
+    cache yet, or when `game` came from the cache and is outdated. None otherwise."""
+    cache = cache_file()
+    if not os.path.exists(cache) or (game.path == cache and game.outdated):
+        return cache
+    return None
+
+
 def candidates(near: str | None = None) -> list[str]:
     """Where game_identifiers.json is looked for: where the editor writes it, the current
     directory, next to `near`, and this checkout."""
@@ -109,6 +130,9 @@ class GameData:
         self.catalysts = data.get('catalysts', {})
         self.attributes = data.get('attributes', {})
         self.categories = data.get('categories', {})
+        self.mutators = data.get('mutators', {})  # the modifiers of high-risk areas and rifts
+        # true if the catalogue does not have all the sections. An older editor wrote such a catalogue.
+        self.outdated = bool(data) and any(key not in data for key in SECTIONS)
         # what a ship can be made to look like (see unlocks.py)
         self.ship_colors = data.get('ship_colors', {})
         self.ship_decals = data.get('ship_decals', {})
@@ -165,6 +189,13 @@ class GameData:
         info = self.item(template)
         cat = self.categories.get(info.get('main_category'), {})
         return cat.get('sub_categories', {}).get(info.get('sub_category')) or cat.get('name', '')
+
+    def area_mutator(self, attribute: str) -> bool:
+        """Whether a mutator can occur in a high-risk area, and thus on a signal decoder. True
+        if the catalogue has no mutators table."""
+        if not self.mutators:
+            return True
+        return bool(self.mutators.get(attribute, {}).get('high_risk_areas'))
 
     def is_equipment(self, template: str) -> bool:
         return self.category(template) in EQUIPMENT_CATEGORIES

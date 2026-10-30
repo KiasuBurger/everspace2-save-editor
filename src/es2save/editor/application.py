@@ -143,10 +143,11 @@ class EditorApp(Gtk.Application):
             if self.path:
                 window.open_path(self.path, then=lambda: self.after_open(window))
 
+        # the editor builds a cache from an older editor again. It does not ask for the game for that cache.
         window.game_files.prepare_game_files(
             then,
-            ask=not self.screenshot,
-            data=None if self.game_data or os.path.exists(cache) else cache,
+            ask=not self.screenshot and not os.path.exists(cache),
+            data=None if self.game_data else gamedata.cache_to_build(game),
         )
 
     def after_open(self, window: EditorWindow) -> None:

@@ -179,16 +179,24 @@ def set_evolution_kills(game: GameData, item: Item, kills: float) -> None:
     items.set_evolution_kills(item, kills, earned, list(game.attributes))
 
 
+def stat_pool(game: GameData, template: str) -> list[str]:
+    """The bonus stats that an item of a template can get. The list of a signal decoder in
+    items.CSV also has mutators that occur only in ancient rifts. These are not in the pool."""
+    pool = game.bonus_attributes(template)
+    if is_decoder(game, template):
+        pool = [a for a in pool if game.area_mutator(a)]
+    return pool
+
+
 def swap_choices(game: GameData, item: Item, current: str) -> list[str]:
     """Bonus stats that `current` could be changed to: the template's pool minus those in use.
     A reliquary's blessing and its radiant blessing each stay among their own kind."""
     used = {n for n, _ in items.attributes(item)}
     radiant = items.is_radiant_blessing(current)
-    return [
-        a
-        for a in game.bonus_attributes(items.template(item))
-        if items.is_radiant_blessing(a) == radiant and (a == current or a not in used)
-    ]
+    pool = stat_pool(game, items.template(item))
+    if current not in pool:
+        pool = [current] + pool  # the item has this stat, so the list keeps it
+    return [a for a in pool if items.is_radiant_blessing(a) == radiant and (a == current or a not in used)]
 
 
 def radiant_blessings(game: GameData, template: str) -> list[str]:
@@ -204,7 +212,7 @@ def takes_stats(game: GameData, template: str) -> bool:
 
 def addable_stats(game: GameData, item: Item) -> list[str]:
     used = {n for n, _ in items.attributes(item)}
-    return [a for a in game.bonus_attributes(items.template(item)) if a not in used]
+    return [a for a in stat_pool(game, items.template(item)) if a not in used]
 
 
 # What each section holds in saves written by the game, as (main category, sub-categories or

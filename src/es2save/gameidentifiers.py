@@ -174,6 +174,24 @@ def read_catalysts(files: dict[str, bytes]) -> Table:
     return out
 
 
+def read_mutators(files: dict[str, bytes]) -> Table:
+    """mutators.csv: id, a weight and three flags. The file does not name its columns. The
+    names here come from the data in saves:
+
+    high_risk_areas  only mutators with this flag occur in high-risk areas and on signal decoders
+    rifts            the mutators that can occur in an ancient rift have this flag
+    rift_bosses      only some mutator_riftboss_* mutators have this flag"""
+    out = collections.OrderedDict()
+    for r in load(files, 'mutators.csv'):
+        out[r[0]] = {
+            'weight': number(r[1]),
+            'high_risk_areas': r[2] == '1',
+            'rifts': r[3] == '1',
+            'rift_bosses': r[4] == '1',
+        }
+    return out
+
+
 def build_items(files: dict[str, bytes], saves: dict[str, Any] | None = None) -> dict[str, Any]:
     """The catalogue of what is in the data files, {name: bytes}. saves is what
     scripts/identifiers.py found in saves, which fills in the "in saves" entries."""
@@ -205,6 +223,7 @@ def build_items(files: dict[str, bytes], saves: dict[str, Any] | None = None) ->
         'items': items,
         'item_sets': sets,
         'attributes': attributes,
+        'mutators': read_mutators(files),
         'catalysts_only_in_items': [i for i in items if i.startswith('catalyst_') and i not in catalysts],
         'affixes_only_in_saves': sorted(set(saves.get('affix_scopes', {})) - set(affixes)),
         'legacy_items': sorted(seen - set(items)),
