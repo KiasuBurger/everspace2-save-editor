@@ -231,6 +231,26 @@ def takes_stats(game: GameData, template: str) -> bool:
     return game.is_equipment(template) or is_decoder(game, template)
 
 
+def chosen_stats(game: GameData, item: Item) -> list[str]:
+    """The bonus stats of an item that count against its limit: the stats from the pool of its
+    template, less the stats that its catalysts added. The game gives the Mining and Evolution
+    catalysts an allowance for the stats that they add."""
+    granted = {n for c in items.catalysts(item) for n, _ in items.catalyst_grants(c)}
+    earned = items.evolution_earned(item)
+    if earned:
+        granted.add(earned)
+    pool = set(stat_pool(game, items.template(item)))
+    return [n for n, _ in items.attributes(item) if n in pool and n not in granted]
+
+
+def stat_limit(game: GameData, item: Item) -> int | None:
+    """The number of chosen bonus stats that the game keeps on the item, or None if the game
+    does not limit them. The game sets a limit only for equipment."""
+    if not game.is_equipment(items.template(item)):
+        return None
+    return items.bonus_stat_limit(items.rarity(item), items.ascendant_count(item) or 0)
+
+
 def addable_stats(game: GameData, item: Item) -> list[str]:
     used = {n for n, _ in items.attributes(item)}
     return [a for a in stat_pool(game, items.template(item)) if a not in used]

@@ -242,6 +242,16 @@ class ItemPanel:
                 expander.set_child(inner)
                 box.append(expander)
             addable = itemrules.addable_stats(game, item)
+            limit = itemrules.stat_limit(game, item)
+            if limit is not None and itemrules.takes_stats(game, tpl):
+                chosen = len(itemrules.chosen_stats(game, item))
+                if chosen > limit:
+                    note = 'The game keeps %d bonus stats on this item. It removes %d at random when it loads the save.'
+                    box.append(label(note % (limit, chosen - limit), 'dim', wrap=True))
+                elif chosen == limit and addable:
+                    box.append(label('The game keeps %d bonus stats on this item.' % limit, 'dim', wrap=True))
+                if chosen >= limit:
+                    addable = []
             if addable and itemrules.takes_stats(game, tpl):
                 self.new_stat = addable[0]
                 add = Gtk.Box(spacing=8)
@@ -500,8 +510,11 @@ class ItemPanel:
         self.changed(rebuild_controls=True)
 
     def set_ascendant(self, count: int) -> None:
-        items.set_ascendant_count(self.edited_item(), count)
-        self.changed()
+        item = self.edited_item()
+        before = itemrules.stat_limit(self.window.game, item)
+        items.set_ascendant_count(item, count)
+        # the highest rank keeps one more bonus stat, which the controls offer
+        self.changed(rebuild_controls=itemrules.stat_limit(self.window.game, item) != before)
 
     def set_grade(self, grade: str) -> None:
         items.set_grade(self.edited_item(), grade)

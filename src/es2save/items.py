@@ -44,7 +44,8 @@ GRADES_FOR = {
     'Superior': ['None', 'Prototype', 'Starforged'],
     'Legendary': ['None', 'Radiant'],
 }
-# number of level-scaled bonus stats items of each rarity carry in saves written by the game
+# The number of level-scaled bonus stats that equipment of each rarity has
+# (UItemLib::GetNumBonusAttributesForRarity). An Ascendant item at the highest rank has one more.
 BONUS_STATS = {'Common': 0, 'Uncommon': 1, 'Rare': 2, 'Superior': 3, 'Ascendant': 3, 'Legendary': 4}
 # VirtualLevelOffset by (rarity, grade); Ascendant adds 0.2 per upgrade
 LEVEL_OFFSETS = {
@@ -281,6 +282,15 @@ def ascendant_count(item: Item) -> int | None:
     if count is None and rank is not None:
         count = round(rank * ASCENDANT_MAX_COUNT)
     return count or 0
+
+
+def bonus_stat_limit(rarity_name: str, ascendant_count: int = 0) -> int:
+    """The number of bonus stats that the game keeps on equipment of this rarity and upgrade
+    count. When the game loads equipment, it removes or rolls bonus stats to get this number."""
+    limit = BONUS_STATS.get(rarity_name, 0)
+    if rarity_name == 'Ascendant' and ascendant_count >= ASCENDANT_MAX_COUNT:
+        limit += 1
+    return limit
 
 
 def legendary_parts(item: Item) -> int | None:
@@ -667,7 +677,7 @@ def create(
         if key in item:
             put(item, key, value)
     if bonus is None:
-        bonus = game.bonus_attributes(template_id)[: BONUS_STATS.get(rarity_name, 0)]
+        bonus = game.bonus_attributes(template_id)[: bonus_stat_limit(rarity_name)]
     names = game.fixed_attributes(template_id) + [b for b in bonus]
     put(item, 'AttributeStates', [_state(n, position_value) for n in names])
     sort_attributes(item, list(game.ranges(template_id)))
