@@ -126,7 +126,18 @@ window.es2 {
 .es2 popover modelbutton:hover { background: #17443f; }
 
 .es2 scrollbar { background: transparent; }
-.es2 scrollbar slider { background: #2b3c45; min-width: 6px; min-height: 6px; border-radius: 3px; }
+/* The slider keeps the transparent border of the theme, so only the colour changes here. The
+   scrollbar is on top of the content. It must fit in the 14px margin of the panels: 3px wide
+   while the pointer is away, and 6px wide under the pointer, 4px from the edge. */
+.es2 scrollbar > range > trough > slider { background-color: #2b3c45; }
+.es2 scrollbar > range > trough > slider:hover { background-color: #3b505b; }
+.es2 scrollbar > range > trough > slider:active { background-color: #4a6370; }
+.es2 scrollbar.vertical > range > trough { margin-left: 4px; margin-right: 4px; }
+.es2 scrollbar.horizontal > range > trough { margin-top: 4px; margin-bottom: 4px; }
+.es2 scrollbar.vertical > range > trough > slider { min-width: 6px; }
+.es2 scrollbar.horizontal > range > trough > slider { min-height: 6px; }
+.es2 scrollbar.overlay-indicator.vertical:not(.hovering):not(.dragging) > range > trough > slider { min-width: 3px; }
+.es2 scrollbar.overlay-indicator.horizontal:not(.hovering):not(.dragging) > range > trough > slider { min-height: 3px; }
 
 .es2 scale { min-height: 18px; padding: 0; }
 .es2 scale trough { background: #24323a; min-height: 4px; border-radius: 2px; }
