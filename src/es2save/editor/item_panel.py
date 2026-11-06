@@ -231,42 +231,28 @@ class ItemPanel:
                 best.connect('clicked', lambda _b: self.max_all())
                 head.append(best)
             box.append(head)
+            note = self.stat_note(item)
+            if note:
+                box.append(label(note, 'dim', wrap=True))
             self.stat_rows: dict[str, tuple[Gtk.Label | Gtk.Entry, Gtk.Label]] = {}
-            for s in editable:
+            add = self.add_stat_row(item)
+            # the control to add a bonus stat goes directly below the last bonus stat, or below
+            # the other attributes when the item has no bonus stat
+            bonus = [i for i, s in enumerate(editable) if s.kind == 'bonus']
+            after = bonus[-1] if bonus else len(editable) - 1
+            if add and after < 0:
+                box.append(add)
+            for i, s in enumerate(editable):
                 box.append(self.stat_row(item, s))
+                if add and i == after:
+                    box.append(add)
             if folded:
-                expander = Gtk.Expander(label='Fixed values (%d)' % len(folded))
+                expander = Gtk.Expander(label='Fixed attributes (%d)' % len(folded))
                 inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
                 for s in folded:
                     inner.append(self.stat_row(item, s))
                 expander.set_child(inner)
                 box.append(expander)
-            addable = itemrules.addable_stats(game, item)
-            limit = itemrules.stat_limit(game, item)
-            if limit is not None and itemrules.takes_stats(game, tpl):
-                chosen = len(itemrules.chosen_stats(game, item))
-                if chosen > limit:
-                    note = 'The game keeps %d bonus stats on this item. It removes %d at random when it loads the save.'
-                    box.append(label(note % (limit, chosen - limit), 'dim', wrap=True))
-                elif chosen == limit and addable:
-                    box.append(label('The game keeps %d bonus stats on this item.' % limit, 'dim', wrap=True))
-                if chosen >= limit:
-                    addable = []
-            if addable and itemrules.takes_stats(game, tpl):
-                self.new_stat = addable[0]
-                add = Gtk.Box(spacing=8)
-                add.append(
-                    self.window.dropdown(
-                        addable,
-                        [game.attribute_name(a) for a in addable],
-                        addable[0],
-                        lambda v: setattr(self, 'new_stat', v),
-                    )
-                )
-                button = Gtk.Button(label='Add stat')
-                button.connect('clicked', lambda _b: self.add_stat())
-                add.append(button)
-                box.append(add)
 
         if card.equipment and 'Catalysts' in item:
             box.append(label('CATALYSTS', 'section-title'))
@@ -382,9 +368,12 @@ class ItemPanel:
                     lambda new, old=s.name: self.swap_stat(old, new),
                 )
             )
-            # a reliquary has its blessing, and its radiant one while it is Radiant, which the
-            # Radiant switch takes away
-            if not itemrules.radiant_blessings(game, items.template(item)):
+            # A reliquary has its blessing, and its radiant one while it is Radiant. The Radiant
+            # switch removes the radiant one. Equipment has a fixed number of bonus stats, so
+            # the user can only change them. An item from a save with too many is the exception.
+            limit = itemrules.stat_limit(game, item)
+            removable = limit is None or len(itemrules.chosen_stats(game, item)) > limit
+            if removable and not itemrules.radiant_blessings(game, items.template(item)):
                 remove = Gtk.Button(label='×')
                 remove.add_css_class('danger')
                 remove.set_tooltip_text('Remove this stat')
@@ -433,6 +422,55 @@ class ItemPanel:
         self.stat_rows[s.name] = (value, factor)
         self.fill_stat_row(s)
         return outer
+
+    def add_stat_row(self, item: Item) -> Gtk.Box | None:
+        """The control to add a bonus stat, or None when the item takes no more."""
+        game = self.window.game
+        addable = itemrules.addable_stats(game, item)
+        limit = itemrules.stat_limit(game, item)
+        if limit is not None and len(itemrules.chosen_stats(game, item)) >= limit:
+            return None
+        if not addable or not itemrules.takes_stats(game, items.template(item)):
+            return None
+        self.new_stat = addable[0]
+        add = Gtk.Box(spacing=8)
+        add.append(
+            self.window.dropdown(
+                addable,
+                [game.attribute_name(a) for a in addable],
+                addable[0],
+                lambda v: setattr(self, 'new_stat', v),
+            )
+        )
+        button = Gtk.Button(label='Add stat')
+        button.connect('clicked', lambda _b: self.add_stat())
+        add.append(button)
+        return add
+
+    def stat_note(self, item: Item) -> str | None:
+        """The text that tells how many bonus attributes the game keeps on equipment of the
+        rarity and rank of the item, and what the game does when the item has a different number.
+        None for other items."""
+        game = self.window.game
+        limit = itemrules.stat_limit(game, item)
+        chosen = len(itemrules.chosen_stats(game, item))
+        spare = len(itemrules.addable_stats(game, item))
+        if not limit or not (chosen or spare):
+            return None  # the game sets no number, or the pool of the template is empty
+        rarity = items.rarity(item)
+        if rarity == 'Ascendant' and limit > items.BONUS_STATS[rarity]:
+            rarity += ' item at rank %d' % (items.ASCENDANT_MAX_COUNT + 1)
+        else:
+            rarity += ' item'
+        article = 'An' if rarity[0] in 'AEIOU' else 'A'
+        text = '%s %s has %d bonus attributes.' % (article, rarity, limit)
+        if items.evolution_earned(item):
+            text += ' The evolution catalyst grants an additional attribute.'
+        if chosen > limit:
+            text += ' The game removes %d at random when it loads the save.' % (chosen - limit)
+        elif chosen < limit and spare:
+            text += ' The game rolls %d more at random when it loads the save.' % min(limit - chosen, spare)
+        return text
 
     def value_entry(self, item: Item, name: str, scale: Gtk.Scale) -> Gtk.Entry:
         """The value beside a slider, in an entry. The user can type a value instead of using the
@@ -506,15 +544,20 @@ class ItemPanel:
         self.changed()
 
     def set_rarity(self, rarity: str) -> None:
-        items.set_rarity(self.edited_item(), rarity, ranked=self.shown_card.equipment)
+        item = self.edited_item()
+        items.set_rarity(item, rarity, ranked=self.shown_card.equipment)
+        itemrules.sync_bonus_stats(self.window.game, item)
         self.changed(rebuild_controls=True)
 
     def set_ascendant(self, count: int) -> None:
         item = self.edited_item()
         before = itemrules.stat_limit(self.window.game, item)
         items.set_ascendant_count(item, count)
-        # the highest rank keeps one more bonus stat, which the controls offer
-        self.changed(rebuild_controls=itemrules.stat_limit(self.window.game, item) != before)
+        # the highest rank keeps one more bonus stat
+        changed = itemrules.stat_limit(self.window.game, item) != before
+        if changed:
+            itemrules.sync_bonus_stats(self.window.game, item)
+        self.changed(rebuild_controls=changed)
 
     def set_grade(self, grade: str) -> None:
         items.set_grade(self.edited_item(), grade)

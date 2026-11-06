@@ -251,6 +251,23 @@ def stat_limit(game: GameData, item: Item) -> int | None:
     return items.bonus_stat_limit(items.rarity(item), items.ascendant_count(item) or 0)
 
 
+def sync_bonus_stats(game: GameData, item: Item) -> None:
+    """Gives equipment the number of chosen bonus stats that the game keeps on it. If the item
+    has too few, it gets the first unused stats of its pool, at their maximum. If it has too
+    many, it loses the last ones. The pool can have too few stats for the limit. Then the item
+    gets all of them. Items without a limit do not change."""
+    limit = stat_limit(game, item)
+    if limit is None:
+        return
+    chosen = chosen_stats(game, item)
+    order = list(game.attributes)
+    for name in chosen[limit:]:
+        items.remove_attribute(item, name)
+    spare = addable_stats(game, item)
+    for name in spare[: max(0, limit - len(chosen))]:
+        items.add_attribute(item, name, 1.0, order)
+
+
 def addable_stats(game: GameData, item: Item) -> list[str]:
     used = {n for n, _ in items.attributes(item)}
     return [a for a in stat_pool(game, items.template(item)) if a not in used]
