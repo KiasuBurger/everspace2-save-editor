@@ -616,7 +616,11 @@ class ItemPanel:
         before = [(n, p) for n, p in items.attributes(item) if n != items.EVOLUTION_KILL_COUNT]
         itemrules.set_evolution_kills(self.window.game, item, kills)
         after = [(n, p) for n, p in items.attributes(item) if n != items.EVOLUTION_KILL_COUNT]
-        # the rows only change when the count crosses one of the catalyst's thresholds
+        # The rows only change when the count crosses one of the catalyst's thresholds.
+        # Known exception: the rebuild removes this spin button, which can have the focus. The
+        # Rank spin button stays during a rebuild, but this one is in the attributes section,
+        # which is the part that is rebuilt. clear() removes the focus first. Thus the window
+        # does not keep the focus on the removed spin button, which caused the crash of 1.2.2.
         self.changed(rebuild_controls=before != after)
 
     @staticmethod

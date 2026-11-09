@@ -122,7 +122,13 @@ def margins(widget: Gtk.Widget, size: int) -> None:
 
 
 def soon(call: Callable[[], object]) -> None:
-    """Calls something once the handler that is running has returned."""
+    """Calls something once the handler that is running has returned.
+
+    Use this when a handler must remove or replace widgets. A widget must not be removed while
+    its own handler runs, and this applies also to the panel or page that holds it. On Windows,
+    GTK 4 can crash if the user presses a key on a widget that the editor removes. Change the
+    save at once, and rebuild only the widgets later. Remove the children of a box with
+    clear()."""
 
     def run() -> bool:
         call()

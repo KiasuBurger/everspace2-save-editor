@@ -121,6 +121,11 @@ If you find the program crashes on Windows, you can find the log file at
 `%LOCALAPPDATA%\es2save\editor.log`. On Linux or MacOS, if you run
 from a terminal, you will see the output directly.
 
+When the editor stops normally, the last line of the log is
+`es2save-editor stopped normally, exit status N`. If this line is not in the log, the
+editor crashed. Some "Windows fatal exception" lines come from exceptions that Windows
+handles, and after them the editor continues.
+
 Please attach it when reporting problems.
 
 ## Licence
