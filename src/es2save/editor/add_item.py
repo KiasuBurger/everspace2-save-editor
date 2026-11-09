@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from .. import itemrules, items
 from ..items import Inventory
 from .gtk import Gtk
-from .widgets import clear, close_on_escape, label, margins, picture
+from .widgets import clear, close_on_escape, label, margins, picture, soon
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -51,8 +51,9 @@ class AddItemDialog(Gtk.Window):
 
         self.listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
         self.search.connect('search-changed', lambda _e: self.listbox.invalidate_filter())
-        # the search takes Escape before the dialog does: it empties the search, then closes
-        self.search.connect('stop-search', lambda e: e.set_text('') if e.get_text() else self.close())
+        # The search takes Escape before the dialog does: it empties the search, then closes the
+        # dialog. The dialog closes after the key handler returns, not during it.
+        self.search.connect('stop-search', lambda e: e.set_text('') if e.get_text() else soon(self.close))
         for t in self.templates:
             row = Gtk.Box(spacing=10)
             texture = window.icons.item(game, t)

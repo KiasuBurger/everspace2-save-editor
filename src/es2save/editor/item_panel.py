@@ -24,7 +24,7 @@ from .. import chaos, itemrules, items
 from ..items import Item
 from . import view
 from .gtk import GLib, Gtk, Pango
-from .widgets import INT_MAX, clear, close_on_escape, label, margins, picture, soon
+from .widgets import INT_MAX, Key, clear, close_on_escape, label, margins, picture, soon
 
 if TYPE_CHECKING:
     from .window import EditorWindow
@@ -738,20 +738,29 @@ class ItemPanel:
         if self.search_cancel:
             self.search_cancel.set()
 
+    def reload_page_soon(self, select: Key | None) -> None:
+        """Selects the slot at once, and builds the page, the sidebar and the controls again
+        after the handler that is running returns. The Duplicate, Delete and Move buttons are
+        among the controls. A button must not be removed while its own handler runs. This
+        applies also when the user pressed Enter or Space on the button."""
+        self.window.selection = select
+        self.window.mark_dirty()
+        soon(lambda: self.window.inventory_page.reload_page(select))
+
     def duplicate_item(self) -> None:
         inv = self.window.selected_inventory
         if inv.is_full():
             self.window.set_status('%s has no free cargo slot' % inv.label, error=True)
             return
         index = inv.add(items.duplicate(self.edited_item()))
-        self.window.inventory_page.reload_page((inv.key, items.CARGO, index))
+        self.reload_page_soon((inv.key, items.CARGO, index))
         self.window.set_status('Duplicated into cargo slot %d' % (index + 1))
 
     def delete_item(self) -> None:
         inv = self.window.selected_inventory
         inv.remove(self.window.selected_slot[1], self.window.selected_slot[2])
         note = self.window.inventory_page.fit_hold(inv, self.window.selected_slot[1])
-        self.window.inventory_page.reload_page(None)
+        self.reload_page_soon(None)
         self.window.set_status('Slot emptied' + ('. ' + note if note else ''))
 
     def move_item(self) -> None:
@@ -763,5 +772,5 @@ class ItemPanel:
         item = inv.remove(self.window.selected_slot[1], self.window.selected_slot[2])
         index = target.add(item)
         note = self.window.inventory_page.fit_hold(inv, self.window.selected_slot[1])
-        self.window.inventory_page.reload_page(None)
+        self.reload_page_soon(None)
         self.window.set_status('Moved to %s, cargo slot %d' % (target.label, index + 1) + ('. ' + note if note else ''))
