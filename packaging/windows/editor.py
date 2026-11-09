@@ -19,6 +19,7 @@ import faulthandler
 import multiprocessing
 import os
 import sys
+from typing import TextIO
 
 from es2save import __version__, gamepaths
 from es2save.editor import main
@@ -27,11 +28,12 @@ LOG_NAME = 'editor.log'
 OLD_LOG_NAME = 'editor.old.log'
 
 
-def open_log() -> None:
+def open_log() -> TextIO | None:
     """Send stdout/err, GTK's warnings and the Python stack of a crash to
     editor.log in the cache directory. The editor has no console, so all of that would
     otherwise be lost. The log of the run before is kept as editor.old.log, so starting
-    the editor again after a crash does not wipe the log of the crash."""
+    the editor again after a crash does not wipe the log of the crash. Returns the log,
+    or None if the editor cannot write it."""
     directory = gamepaths.cache_dir()
     path = os.path.join(directory, LOG_NAME)
     try:
@@ -40,7 +42,7 @@ def open_log() -> None:
             os.replace(path, os.path.join(directory, OLD_LOG_NAME))
         log = open(path, 'w', buffering=1, encoding='utf-8', errors='replace')  # noqa: SIM115 (open until exit)
     except OSError:
-        return
+        return None
     # started from a shell, the editor has the shell's streams, which it keeps (--version is
     # read from them); started from Explorer, it has none
     if sys.stdout is None:
@@ -54,10 +56,20 @@ def open_log() -> None:
             pass
     faulthandler.enable(log)
     print('es2save-editor %s' % __version__, file=log)
+    return log
 
 
 if __name__ == '__main__':
     # the seed search's worker processes are this program started again
     multiprocessing.freeze_support()
-    open_log()
-    sys.exit(main())
+    log = open_log()
+    try:
+        status: str | int | None = main()
+    except SystemExit as e:  # argparse stops the program this way, as for --version
+        status = e.code
+    # A crash stops the program before this line. Without this line, the log cannot show
+    # whether a "Windows fatal exception" stopped the editor. Windows reports some
+    # exceptions to faulthandler that a handler then catches, and the editor continues.
+    if log:
+        print('es2save-editor stopped normally, exit status %s' % status, file=log)
+    sys.exit(status)
