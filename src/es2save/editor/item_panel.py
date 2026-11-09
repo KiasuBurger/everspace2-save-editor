@@ -34,6 +34,7 @@ class ItemPanel:
     def __init__(self, window: EditorWindow) -> None:
         self.window = window
         self.card: view.Card | None = None
+        self.lower_box: Gtk.Box | None = None  # the controls below the ITEM section
         self.search_cancel: threading.Event | None = None  # set to stop the seed search under way
 
     def edited_item(self) -> Item:
@@ -48,8 +49,10 @@ class ItemPanel:
             raise RuntimeError('no item is selected')
         return self.card
 
-    def changed(self, rebuild_controls: bool = False) -> None:
-        """Call after changing the selected item: refreshes its tile, the card and the title."""
+    def changed(self, rebuild_controls: bool = False, rebuild_lower: bool = False) -> None:
+        """Call after changing the selected item: refreshes its tile, the card and the title.
+        rebuild_controls builds all the controls again. rebuild_lower builds again only the
+        controls below the ITEM section, and keeps the control that changed."""
         # the count of legendary crafting parts follows the rarity and the mutators
         itemrules.sync_legendary_parts(self.window.game, self.edited_item())
         self.window.mark_dirty()
@@ -60,6 +63,8 @@ class ItemPanel:
         if rebuild_controls:
             # the control that changed is among what is rebuilt, which must not happen inside its handler
             soon(self.build_controls)
+        elif rebuild_lower:
+            soon(self.build_lower_controls)
         if self.window.selection and self.window.inventory_page.fit_hold(
             self.window.open_doc.inventory(self.window.selection[0]), self.window.selection[1]
         ):
@@ -162,8 +167,23 @@ class ItemPanel:
             return
         with self.window.filling():
             self.fill_controls(item)
+            self.lower_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            self.window.edit_box.append(self.lower_box)
+            self.fill_lower_controls(item, self.lower_box)
+
+    def build_lower_controls(self) -> None:
+        """Builds again the controls below the ITEM section, and keeps the controls of the
+        ITEM section. A rank change uses this. On Windows, GTK can crash when the user presses
+        Enter just after the editor removes the focused spin button and puts a new one in its place."""
+        item = self.window.selected_item()
+        if item is None or self.lower_box is None or self.lower_box.get_parent() is not self.window.edit_box:
+            return
+        clear(self.lower_box)
+        with self.window.filling():
+            self.fill_lower_controls(item, self.lower_box)
 
     def fill_controls(self, item: Item) -> None:
+        """Fills in the ITEM section: the controls for the item itself, as its level and rarity."""
         game, card, box = self.window.game, self.shown_card, self.window.edit_box
         tpl = card.template
 
@@ -215,6 +235,11 @@ class ItemPanel:
                 prefix.set_sensitive(False)
                 prefix.set_tooltip_text('Set by the prefix catalyst')
             box.append(self.window.row('Prefix', prefix))
+
+    def fill_lower_controls(self, item: Item, box: Gtk.Box) -> None:
+        """Fills in the sections below the ITEM section: attributes, catalysts, the chaos seed and the actions."""
+        game, card = self.window.game, self.shown_card
+        tpl = card.template
 
         # Everything Chaos scales is listed. Values the game fixes (a stack limit of 6, a
         # weapon's base numbers) have no slider; the legendary ones stay in view and the rest
@@ -557,7 +582,8 @@ class ItemPanel:
         changed = itemrules.stat_limit(self.window.game, item) != before
         if changed:
             itemrules.sync_bonus_stats(self.window.game, item)
-        self.changed(rebuild_controls=changed)
+        # the Rank spin button stays: the user can still be typing in it
+        self.changed(rebuild_lower=changed)
 
     def set_grade(self, grade: str) -> None:
         items.set_grade(self.edited_item(), grade)

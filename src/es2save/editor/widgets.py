@@ -132,6 +132,12 @@ def soon(call: Callable[[], object]) -> None:
 
 
 def clear(box: Gtk.Box) -> None:
+    """Removes all the children of the box. If the keyboard focus is in the box, the window
+    loses the focus first, while the focused widget is still complete."""
+    root = box.get_root()
+    focus = root.get_focus() if root else None
+    if root and focus and focus.is_ancestor(box):
+        root.set_focus(None)
     child = box.get_first_child()
     while child:
         nxt = child.get_next_sibling()
