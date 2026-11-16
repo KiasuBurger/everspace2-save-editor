@@ -25,6 +25,7 @@ from collections.abc import Iterable, Sequence
 from .. import chaos, items
 from ..gamedata import GameData
 from ..itemrules import (
+    EXCLUSIVE,
     catalyst_fits_rarity,
     effective_affix,
     evolution_fits,
@@ -285,6 +286,11 @@ def build_card(game: GameData, item: Item) -> Card:
             card.warnings.append('The game only installs Flawless on Radiant items with legendary attributes.')
         elif not evolution_fits(game, item, c):
             card.warnings.append('The game does not install Evolution on a weapon that does no damage.')
+    if set(EXCLUSIVE) <= set(catalyst_ids):
+        card.warnings.append(
+            'The game does not install Mining and Evolution on the same item. When it loads the '
+            'save, it removes bonus attributes from this item at random.'
+        )
     # The game keeps one catalyst on an item besides Hexaspatial, and its own installing
     # goes wrong on more: it undoes all of them but takes out one, and re-applying what is
     # left has crashed it on an equipped item.

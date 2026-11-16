@@ -102,7 +102,21 @@ def catalyst_fits(game: GameData, item: Item, catalyst: str) -> bool:
         catalyst_fits_rarity(game, catalyst, items.rarity(item))
         and flawless_fits(item, catalyst)
         and evolution_fits(game, item, catalyst)
+        and exclusive_fits(item, catalyst)
     )
+
+
+# The game gives an allowance of bonus attributes for only one of these catalysts.
+EXCLUSIVE = (items.MINING, items.EVOLUTION)
+
+
+def exclusive_fits(item: Item, catalyst: str) -> bool:
+    """The Mining and Evolution catalysts do not go on the same item. In the game, an item holds
+    one catalyst, so a player cannot install both. On an item with both, the game removes
+    bonus attributes at random when it loads the save."""
+    if catalyst not in EXCLUSIVE:
+        return True
+    return not any(c in EXCLUSIVE and c != catalyst for c in items.catalysts(item))
 
 
 def installable_catalysts(game: GameData, item: Item) -> list[str]:
@@ -234,7 +248,8 @@ def takes_stats(game: GameData, template: str) -> bool:
 def chosen_stats(game: GameData, item: Item) -> list[str]:
     """The bonus stats of an item that count against its limit: the stats from the pool of its
     template, less the stats that its catalysts added. The game gives the Mining and Evolution
-    catalysts an allowance for the stats that they add."""
+    catalysts an allowance for the stats that they add. The allowance is for one catalyst only,
+    so this count is not correct for an item with both (see exclusive_fits)."""
     granted = {n for c in items.catalysts(item) for n, _ in items.catalyst_grants(c)}
     earned = items.evolution_earned(item)
     if earned:
