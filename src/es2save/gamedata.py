@@ -221,11 +221,15 @@ class GameData:
         return self.category(template) in EQUIPMENT_CATEGORIES
 
     def rarities(self, template: str) -> list[str]:
-        """The rarities the template allows, lowest first."""
+        """The rarities the template allows, lowest first. While the game may not generate
+        certain equipment at Ascendant quality, it always allows Superior equipment to be
+        upgraded to Ascendant."""
         info = self.item(template)
         lo, hi = info.get('min_rarity'), info.get('max_rarity')
         if lo not in RARITIES or hi not in RARITIES:
             return list(RARITIES)
+        if hi == 'Superior' and self.is_equipment(template):
+            hi = 'Ascendant'
         return RARITIES[RARITIES.index(lo) : RARITIES.index(hi) + 1]
 
     def templates(self, main_category: str | None = None) -> list[str]:
